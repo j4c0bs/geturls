@@ -41,6 +41,9 @@ def parse_arguments():
     parser.add_argument('--extract', '-x', action='store_true',
                          help='Skip download and print URLs to stdout')
 
+    parser.add_argument('--overwrite', action='store_true',
+                         help='Overwrite existing files of same name')
+
     parser.add_argument('--reject', '-r', type=str, nargs='+',
                          help='Skip filetypes entered')
 
