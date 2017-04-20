@@ -51,6 +51,7 @@ def parse_arguments():
 
 # ------------------------------------------------------------------------------
 def get_data(file_url):
+    data = False
     try:
         data = request.urlopen(file_url)
     except URLError:
