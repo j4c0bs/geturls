@@ -121,7 +121,11 @@ def process_input_files(files):
 
 def main():
     args = parse_arguments()
-    urlist = process_input_files((infile.name for infile in args.input))
+
+    if args.input:
+        urlist = process_input_files((infile.name for infile in args.input))
+    else:
+        urlist = extract_urls(args.urls)
 
     if args.reject:
         urlist = [url for url in urlist if all((not url.endswith(ft) for ft in args.reject))]
