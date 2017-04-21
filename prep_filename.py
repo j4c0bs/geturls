@@ -45,10 +45,11 @@ def get_name(filename, root='.'):
         for other_fn in check_files:
             fn_match = fn_incremented.match(other_fn)
             if fn_match:
-                end_digits.append(int(fn_match.groups()))
+                end_digits.append(int(fn_match.groups()[0]))
         if end_digits:
             fn_suffix = str(max(end_digits) + 1)
-            fn_out = fn + '-' + fn_suffix + '.' + fn_type
+            # fn_out = fn + '-' + fn_suffix + '.' + fn_type
+            fn_out = ''.join([fn, '-', fn_suffix, '.', fn_type])
         else:
             fn_out = filename
 
