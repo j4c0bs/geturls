@@ -5,6 +5,7 @@ import re
 from string import punctuation
 from urllib import request
 from urllib.error import URLError
+from prep_filename import get_name
 # ------------------------------------------------------------------------------
 # >>> if -i is relative and -d is outside of cwd, chdir ok here?
 # msg = 'Directory path entered is not valid: {}'.format(user_dir)
@@ -91,9 +92,20 @@ def extract_urls(lines):
     return links
 
 # ------------------------------------------------------------------------------
+def type_to_path(url):
+    filename = url.rsplit('/',1)[1]
+    if '.' not in filename:
+        fn_dir = 'unknown_filetype'
+    else:
+        fn_dir = filename.rsplit('.', 1)[1]
+    return os.path.join(fn_dir, filename)
+
 def make_dir_map(urlist, dirsort_type):
     # url_to_fn = {}
-    pass
+    if dirsort_type == 'type':
+        url_to_fn = [(url, type_to_path(url)) for url in urlist]
+
+    return url_to_fn
 
 
 def display(urlist):
@@ -140,15 +152,20 @@ def main():
         dirsort_type = list(compress(('host', 'name', 'type'), sort_options))[0]
         url_to_fn = make_dir_map(urlist, dirsort_type)
     else:
-        url_to_fn = [(url, url.rsplit('/',1)[1]) for url in urlist]
+        if not args.overwrite:
+            url_to_fn = [(url, url.rsplit('/',1)[1]) for url in urlist]
+        else:
+            url_to_fn = [(url, get_name(url.rsplit('/',1)[1])) for url in urlist]
 
-    display(urlist)
+    # display(urlist)
 
     failed = []
     for (url, fn) in url_to_fn:
         completed = download(url, fn)
         if not completed:
             failed.append(url)
+        else:
+            print('completed:', url)
 
     if failed:
         print('-'*80)
