@@ -28,6 +28,7 @@ def parse_arguments():
 
     parser.add_argument('--input', '-i', nargs='+', type=argparse.FileType('r'),
                          help="Input file(s)", required=True)
+
     parser.add_argument('--dirprefix', '-d', type=validate_dir, default=os.getcwd(),
                          help='Root / parent directory to store all files and subdirectories - defaults to cwd')
 
@@ -69,26 +70,18 @@ def download(file_url, fn):
         return False
 
 # ------------------------------------------------------------------------------
-is_url = re.compile(r'^(?:[a-z0-9\.\-\+]*)'
-    r'://(?:\S+(?::\S*)?@)'
-    r'?(?:(?:25[0-5]|2[0-4]\d|[0-1]?\d?\d)(?:\.(?:25[0-5]|2[0-4]\d|[0-1]?\d?\d))'
-    r'{3}|\[[0-9a-f:\.]+\]|'
-    r'([a-z¡-\uffff0-9](?:[a-z¡-\uffff0-9-]{0,61}[a-z¡-\uffff0-9])?(?:\.(?!-)[a-z¡-\uffff0-9-]{1,63}(?<!-))'
-    r'*\.(?!-)(?:[a-z¡-\uffff-]{2,63}|xn--[a-z0-9]{1,59})(?<!-)\.?|localhost))(?::\d{2,5})?(?:[/?#][^\s]*)?\Z',
-    re.IGNORECASE|re.UNICODE)
+is_url = re.compile(r"(((http)s?://)?(w{3}\.)?([\w\-]+)(:\d)?\.([a-z]+)/((\.?(\w*[~!@#\$%^&*\(\)\-_\+\=,;`.]*)+(/|\.)?)+)[^\/])$")
+has_scheme = re.compile(r"^(http)s?://.+")
 
-
-def extract_urls_from_file(fn):
+def extract_urls(lines):
     links = []
-    with open(fn, 'r') as f:
-        lines = [line.strip() for line in f if line.strip() != '']
-
     for line in lines:
-        split_words = (word for word in line.split(' ') if not word.isalnum())
+        split_words = (word.lower() for word in line.split(' ') if not word.isalnum())
         for word in split_words:
-            cleaned = word.strip(punctuation)
-            if is_url.match(cleaned):
-                links.append(cleaned)
+            word = word.lstrip(punctuation)
+            valid_url = is_url.match(word)
+            if valid_url:
+                links.append(valid_url.group())
 
     return links
 
@@ -103,24 +96,28 @@ def display(urlist):
     for url in urlist:
         print(url)
 
-def get_all_urls(files):
+def process_input_files(files):
     links = []
     for fn in files:
-        found_links = extract_urls_from_file(fn)
+        with open(fn, 'r') as f:
+            lines = (line.strip() for line in f if line.strip() != '')
+
+        found_links = extract_urls(lines)
         if found_links:
             links.extend(found_links)
 
     if links:
-        links = sorted(set(links), key=lambda url: url.count('/'))
+        if len(files) > 1:
+            links = sorted(set(links))
     else:
-        print('No valid Urls located within:\n')
+        print('No valid URLs located within input files')
 
     return links
 
 
 def main():
     args = parse_arguments()
-    urlist = get_all_urls((infile.name for infile in args.input))
+    urlist = process_input_files((infile.name for infile in args.input))
 
     if args.reject:
         urlist = [url for url in urlist if all((not url.endswith(ft) for ft in args.reject))]
@@ -143,16 +140,11 @@ def main():
 
     if failed:
         print('-'*80)
-        print('The following urls were not downloaded:')
+        print('The following URLs were not downloaded:')
         for url in failed:
             print(url)
         print('-'*80)
 
-# ------------------------------------------------------------------------------
-# In [75]: os.system('which wget')
-# /usr/local/bin/wget
-# Out[75]: 0
-# >>> not found -> d == 256
 # ------------------------------------------------------------------------------
 if __name__ == '__main__':
     # args = parse_arguments()
@@ -160,21 +152,3 @@ if __name__ == '__main__':
     main()
     # print(args)
     print()
-
-
-    # def make_file(fn):
-    #     with open(fn, 'w') as txt:
-    #         txt.write('Test File')
-    #     return
-    #
-    # def generate_test_files(n, nsubdir):
-    #     for ns in range(nsubdir):
-    #         dir_name = 'test_folder_{}'.format(str(ns).rjust(2,'0'))
-    #         if not os.path.exists(dir_name):
-    #             os.mkdir(dir_name)
-    #
-    #         for x in range(n):
-    #             txt_fn = 'TXT_{}.txt'.format(x)
-    #             fn = os.path.join(dir_name, txt_fn)
-    #             make_file(fn)
-    #     return
