@@ -16,7 +16,7 @@ def validate_dir(user_dir):
     if not os.path.exists(user_dir):
         os.mkdir(user_dir)
 
-    os.chdir(user_dir)
+    # os.chdir(user_dir)
     return user_dir
 
 
@@ -61,6 +61,7 @@ def get_data(file_url):
         data = request.urlopen(file_url)
     except URLError:
         data = False
+        print('URLError', file_url)
     finally:
         return data
 
@@ -74,13 +75,13 @@ def download(file_url, fn):
         return False
 
 # ------------------------------------------------------------------------------
-is_url = re.compile(r"(((http)s?://)?(w{3}\.)?([\w\-]+)(:\d)?\.([a-z]+)/((\.?(\w*[~!@#\$%^&*\(\)\-_\+\=,;`.]*)+(/|\.)?)+)[^\/])$")
+is_url = re.compile(r"(((http)s?://)?(w{3}\.)?([\w\-]+)(:\d)?\.([a-z]+)/((\.?(\w*[~!@#\$%^&*\(\)\-_\+\=,;`.]*)+(/|\.)?)+)[^\/])$", re.IGNORECASE)
 has_scheme = re.compile(r"^(http)s?://.+")
 
 def extract_urls(lines):
     links = []
     for line in lines:
-        split_words = (word.lower() for word in line.split(' ') if not word.isalnum())
+        split_words = (word for word in line.split(' ') if not word.isalnum())
         for word in split_words:
             word = word.lstrip(punctuation)
             valid_url = is_url.match(word)
@@ -96,7 +97,7 @@ def make_dir_map(urlist, dirsort_type):
 
 
 def display(urlist):
-    print()
+    print('input urlist:')
     for url in urlist:
         print(url)
 
@@ -104,7 +105,7 @@ def process_input_files(files):
     links = []
     for fn in files:
         with open(fn, 'r') as f:
-            lines = (line.strip() for line in f if line.strip() != '')
+            lines = [line.strip() for line in f if line.strip() != '']
 
         found_links = extract_urls(lines)
         if found_links:
@@ -123,9 +124,12 @@ def main():
     args = parse_arguments()
 
     if args.input:
-        urlist = process_input_files((infile.name for infile in args.input))
+        urlist = process_input_files([infile.name for infile in args.input])
     else:
         urlist = extract_urls(args.urls)
+
+    if args.dirprefix != os.getcwd():
+        os.chdir(args.dirprefix)
 
     if args.reject:
         urlist = [url for url in urlist if all((not url.endswith(ft) for ft in args.reject))]
