@@ -24,10 +24,14 @@ def parse_arguments():
     parser = argparse.ArgumentParser(prog='get_urls',
                                      description='downloads urls parsed from file')
 
+    input_group = parser.add_mutually_exclusive_group(required=True)
     subdir_group = parser.add_mutually_exclusive_group()
 
-    parser.add_argument('--input', '-i', nargs='+', type=argparse.FileType('r'),
-                         help="Input file(s)", required=True)
+    input_group.add_argument('--input', '-i', nargs='+', type=argparse.FileType('r'),
+                         help="Input file(s) to parse for URLS")
+
+    input_group.add_argument('--urls', '-u', nargs='+', type=str,
+                         help="Input text URL(s) to download")
 
     parser.add_argument('--dirprefix', '-d', type=validate_dir, default=os.getcwd(),
                          help='Root / parent directory to store all files and subdirectories - defaults to cwd')
