@@ -66,9 +66,12 @@ def get_data(file_url):
     finally:
         return data
 
-def download(file_url, fn):
+def download(file_url, fn=''):
     data = get_data(file_url)
+
     if data:
+        if not fn:
+            fn = file_url.rsplit('/',1)[1]
         with open(fn, 'wb') as f:
             f.write(data.read())
         return True
@@ -101,7 +104,6 @@ def type_to_path(url):
     return os.path.join(fn_dir, filename)
 
 def make_dir_map(urlist, dirsort_type):
-    # url_to_fn = {}
     if dirsort_type == 'type':
         url_to_fn = [(url, type_to_path(url)) for url in urlist]
 
@@ -131,6 +133,24 @@ def process_input_files(files):
 
     return links
 
+def write_files_to_cwd(urlist, overwrite):
+    if not overwrite:
+        url_to_fn = [(url, url.rsplit('/',1)[1]) for url in urlist]
+    else:
+        url_to_fn = [(url, get_name(url.rsplit('/',1)[1])) for url in urlist]
+
+    failed = []
+    for (url, fn) in url_to_fn:
+        if not download(url, fn):
+            failed.append(url)
+        else:
+            print('completed:', url)
+
+    if failed:
+        print('-'*80)
+        print('The following URLs were not downloaded:')
+        for url in failed:
+            print(url)
 
 def main():
     args = parse_arguments()
@@ -152,27 +172,28 @@ def main():
         dirsort_type = list(compress(('host', 'name', 'type'), sort_options))[0]
         url_to_fn = make_dir_map(urlist, dirsort_type)
     else:
-        if not args.overwrite:
-            url_to_fn = [(url, url.rsplit('/',1)[1]) for url in urlist]
-        else:
-            url_to_fn = [(url, get_name(url.rsplit('/',1)[1])) for url in urlist]
+        write_files_to_cwd(urlist, args.overwrite)
+        # if not args.overwrite:
+        #     url_to_fn = [(url, url.rsplit('/',1)[1]) for url in urlist]
+        # else:
+        #     url_to_fn = [(url, get_name(url.rsplit('/',1)[1])) for url in urlist]
 
     # display(urlist)
 
-    failed = []
-    for (url, fn) in url_to_fn:
-        completed = download(url, fn)
-        if not completed:
-            failed.append(url)
-        else:
-            print('completed:', url)
-
-    if failed:
-        print('-'*80)
-        print('The following URLs were not downloaded:')
-        for url in failed:
-            print(url)
-        print('-'*80)
+    # failed = []
+    # for (url, fn) in url_to_fn:
+    #     completed = download(url, fn)
+    #     if not completed:
+    #         failed.append(url)
+    #     else:
+    #         print('completed:', url)
+    #
+    # if failed:
+    #     print('-'*80)
+    #     print('The following URLs were not downloaded:')
+    #     for url in failed:
+    #         print(url)
+    #     print('-'*80)
 
 # ------------------------------------------------------------------------------
 if __name__ == '__main__':
