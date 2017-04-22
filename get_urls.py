@@ -96,19 +96,6 @@ def extract_urls(lines):
     return links
 
 # ------------------------------------------------------------------------------
-def type_to_path(url):
-    filename = url.rsplit('/',1)[1]
-    if '.' not in filename:
-        fn_dir = 'unknown_filetype'
-    else:
-        fn_dir = filename.rsplit('.', 1)[1]
-
-    if not os.path.exists(fn_dir):
-        os.mkdir(fn_dir)
-
-    return os.path.join(fn_dir, filename)
-
-
 
 def save_to_filetype_subdirs(urlist, overwrite):
     temp_root = tempfile.mkdtemp()
@@ -150,11 +137,11 @@ def save_to_filetype_subdirs(urlist, overwrite):
 
 
 
-def make_dir_map(urlist, dirsort_type, overwrite):
+def save_to_subdirs(urlist, dirsort_type, overwrite):
     if dirsort_type == 'type':
-        url_to_fn = [(url, type_to_path(url)) for url in urlist]
+        completed, failed = save_to_filetype_subdirs(urlist, overwrite)
 
-    return url_to_fn
+    return completed, failed
 
 
 def display(urlist):
@@ -217,7 +204,7 @@ def main():
 
     if any(sort_options):
         dirsort_type = list(compress(('host', 'name', 'type'), sort_options))[0]
-        url_to_fn = make_dir_map(urlist, dirsort_type, args.overwrite)
+        completed, failed = save_to_subdirs(urlist, dirsort_type, args.overwrite)
     else:
         write_files_to_cwd(urlist, args.overwrite)
         # if not args.overwrite:
