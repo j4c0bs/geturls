@@ -57,6 +57,13 @@ def parse_arguments():
     return parser.parse_args()
 
 # ------------------------------------------------------------------------------
+scheme_pattern = re.compile(r"^((http)s?:)?(//).+")
+def has_scheme(url):
+    if scheme_pattern.match(url):
+        return True
+    else:
+        return False
+
 def get_data(file_url):
     data = False
     try:
@@ -67,12 +74,19 @@ def get_data(file_url):
     finally:
         return data
 
-def download(file_url, filepath=''):
-    data = get_data(file_url)
+def download(url, filepath=''):
+    if not has_scheme(url):
+        slash_url = '//' + url
+        if has_scheme(slash_url):
+            url = slash_url
+        else:
+            return False
+
+    data = get_data(url)
 
     if data:
         if not filepath:
-            filepath = file_url.rsplit('/',1)[1]
+            filepath = url.rsplit('/',1)[1]
         with open(filepath, 'wb') as f:
             f.write(data.read())
         return True
@@ -81,7 +95,6 @@ def download(file_url, filepath=''):
 
 # ------------------------------------------------------------------------------
 is_url = re.compile(r"(((http)s?://)?(w{3}\.)?([\w\-]+)(:\d)?\.([a-z]+)/((\.?(\w*[~!@#\$%^&*\(\)\-_\+\=,;`.]*)+(/|\.)?)+)[^\/])$", re.IGNORECASE)
-has_scheme = re.compile(r"^(http)s?://.+")
 
 def extract_urls(lines):
     links = []
@@ -96,10 +109,13 @@ def extract_urls(lines):
     return links
 
 # ------------------------------------------------------------------------------
-
-def save_to_filetype_subdirs(urlist, overwrite):
+def load_temp_dir():
     temp_root = tempfile.mkdtemp()
     temp_dir = os.mkdir(os.path.join(temp_root, 'get_urls_temp'))
+    return temp_root, temp_dir
+
+def save_to_filetype_subdirs(urlist, overwrite):
+    temp_root, temp_dir = load_temp_dir()
     namelist = []
 
     completed = []
@@ -116,7 +132,7 @@ def save_to_filetype_subdirs(urlist, overwrite):
 
     if not completed:
         print('All downloads failed')
-        return False
+        return completed, failed
 
     fn_types = [get_type(fn, subdir=True)[1] for fn in namelist]
     type_subdirs = sorted(set(fn_types))
@@ -134,6 +150,20 @@ def save_to_filetype_subdirs(urlist, overwrite):
         print('check_temp:', check_temp)
 
     return completed, failed
+
+
+def save_to_host_subdirs(urlist, overwrite):
+    temp_root, temp_dir = load_temp_dir()
+    hostpath_split = [tuple(url.rsplit('/',1)) for url in urlist]
+    host_dirs = sorted(set(subdir[0] for subdir in hostpath_split))
+    host_dir_map = {subdir: ix for ix, subdir in enumerate(host_dirs)}
+
+    for url, (hostpath, filename) in zip(urlist, hostpath_split):
+        temp_subdir = os.path.join(temp_dir, str(ix))
+        if not os.path.exists(temp_subdir):
+            os.mkdir(temp_subdir)
+
+
 
 
 
