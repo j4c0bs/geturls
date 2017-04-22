@@ -3,9 +3,10 @@ from itertools import compress
 import os
 import re
 from string import punctuation
+import tempfile
 from urllib import request
 from urllib.error import URLError
-from prep_filename import get_name
+from prep_filename import get_name, get_path
 # ------------------------------------------------------------------------------
 # >>> if -i is relative and -d is outside of cwd, chdir ok here?
 # msg = 'Directory path entered is not valid: {}'.format(user_dir)
@@ -66,13 +67,13 @@ def get_data(file_url):
     finally:
         return data
 
-def download(file_url, fn=''):
+def download(file_url, filepath=''):
     data = get_data(file_url)
 
     if data:
-        if not fn:
-            fn = file_url.rsplit('/',1)[1]
-        with open(fn, 'wb') as f:
+        if not filepath:
+            filepath = file_url.rsplit('/',1)[1]
+        with open(filepath, 'wb') as f:
             f.write(data.read())
         return True
     else:
@@ -101,9 +102,55 @@ def type_to_path(url):
         fn_dir = 'unknown_filetype'
     else:
         fn_dir = filename.rsplit('.', 1)[1]
+
+    if not os.path.exists(fn_dir):
+        os.mkdir(fn_dir)
+
     return os.path.join(fn_dir, filename)
 
-def make_dir_map(urlist, dirsort_type):
+
+
+def save_to_filetype_subdirs(urlist, overwrite):
+    temp_root = tempfile.mkdtemp()
+    temp_dir = os.mkdir(os.path.join(temp_root, 'get_urls_temp'))
+    namelist = []
+
+    completed = []
+    failed = []
+
+    for url in urlist:
+        filepath, filename = get_path(url, root=temp_dir, overwrite=overwrite)
+        status = download(url, filepath)
+        if status:
+            completed.append(url)
+            namelist.append(filename)
+        else:
+            failed.append(url)
+
+    if not completed:
+        print('All downloads failed')
+        return False
+
+    fn_types = [get_type(fn, subdir=True)[1] for fn in namelist]
+    type_subdirs = sorted(set(fn_types))
+
+    for subdir in type_subdirs:
+        if not os.path.exists(subdir):
+            os.mkdir(subdir)
+
+    for temp_path, filename, filetype in zip(completed, namelist, fn_types):
+        filepath = os.path.join(filetype, filename)
+        os.rename(temp_path, filepath)
+
+    check_temp = os.listdir(temp_dir)
+    if check_temp:
+        print('check_temp:', check_temp)
+
+    return completed, failed
+
+
+
+def make_dir_map(urlist, dirsort_type, overwrite):
     if dirsort_type == 'type':
         url_to_fn = [(url, type_to_path(url)) for url in urlist]
 
@@ -170,7 +217,7 @@ def main():
 
     if any(sort_options):
         dirsort_type = list(compress(('host', 'name', 'type'), sort_options))[0]
-        url_to_fn = make_dir_map(urlist, dirsort_type)
+        url_to_fn = make_dir_map(urlist, dirsort_type, args.overwrite)
     else:
         write_files_to_cwd(urlist, args.overwrite)
         # if not args.overwrite:
