@@ -49,7 +49,6 @@ def url_to_path(url, root=os.curdir):
     return filepath, filename
 
 def get_path(url, root=os.curdir, overwrite=False):
-    filename = url.rsplit('/',1)[1]
     if overwrite:
         filepath = os.path.join(root, filename)
     else:

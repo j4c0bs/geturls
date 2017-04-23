@@ -91,7 +91,10 @@ def download(url, filepath=''):
         return False
 
 # ------------------------------------------------------------------------------
-is_url = re.compile(r"(((http)s?://)?(w{3}\.)?([\w\-]+)(:\d)?\.([a-z]+)/((\.?(\w*[~!@#\$%^&*\(\)\-_\+\=,;`.]*)+(/|\.)?)+)[^\/])$", re.IGNORECASE)
+# filename = urllib.parse.unquote(url.rsplit('/',1)[1])
+# is_url = re.compile(r"(((http)s?://)?(w{3}\.)?([\w\-]+)(:\d)?\.([a-z]+)/((\.?(\w*[~!@#\$%^&*\(\)\-_\+\=,;`.]*)+(/|\.)?)+)[^\/])$", re.IGNORECASE)
+is_url = re.compile(r"(((http)s?://)?(w{3}\.)?([\w\-]+)(:\d)?\.([a-z]+)/((\.?(.+[^\/])+(/|\.)?)+)[^\/])$", re.IGNORECASE)
+punc = punctuation.replace('/','')
 
 def extract_urls(lines):
     links = []
@@ -109,7 +112,9 @@ def extract_urls(lines):
 def load_temp_dir():
     temp_root = tempfile.mkdtemp()
     temp_subname = 'GETURLS_TMP_{}'.format(int(time.time()))
-    temp_dir = os.mkdir(os.path.join(temp_root, temp_subname))
+    temp_dir = os.path.join(temp_root, temp_subname)
+    os.mkdir(temp_dir)
+
     return temp_root, temp_dir
 
 def save_to_filetype_subdirs(urlist, overwrite):
@@ -123,7 +128,8 @@ def save_to_filetype_subdirs(urlist, overwrite):
         filepath, filename = get_path(url, root=temp_dir, overwrite=overwrite)
         status = download(url, filepath)
         if status:
-            completed.append(url)
+            print('Downloaded:', url)
+            completed.append(filepath)
             namelist.append(filename)
         else:
             failed.append(url)
@@ -210,6 +216,11 @@ def save_to_host_subdirs(urlist, overwrite):
 def save_to_subdirs(urlist, dirsort_type, overwrite):
     if dirsort_type == 'type':
         completed, failed = save_to_filetype_subdirs(urlist, overwrite)
+
+    if failed:
+        print('Failed:')
+        for url in failed:
+            print(url)
 
     return completed, failed
 
