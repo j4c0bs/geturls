@@ -7,6 +7,7 @@ import tempfile
 import time
 from urllib import request
 from urllib.error import URLError
+from urllib.parse import unquote as url_unquote
 from prep_filename import get_name, get_path, get_type
 # ------------------------------------------------------------------------------
 
@@ -54,13 +55,6 @@ def parse_arguments():
     return parser.parse_args()
 
 # ------------------------------------------------------------------------------
-scheme_pattern = re.compile(r"^((http)s?:)?(//).+")
-def has_scheme(url):
-    if scheme_pattern.match(url):
-        return True
-    else:
-        return False
-
 def get_data(file_url):
     data = False
     try:
@@ -72,13 +66,6 @@ def get_data(file_url):
         return data
 
 def download(url, filepath=''):
-    if not has_scheme(url):
-        slash_url = '//' + url
-        if has_scheme(slash_url):
-            url = slash_url
-        else:
-            return False
-
     data = get_data(url)
 
     if data:
@@ -91,10 +78,29 @@ def download(url, filepath=''):
         return False
 
 # ------------------------------------------------------------------------------
-# filename = urllib.parse.unquote(url.rsplit('/',1)[1])
-# is_url = re.compile(r"(((http)s?://)?(w{3}\.)?([\w\-]+)(:\d)?\.([a-z]+)/((\.?(\w*[~!@#\$%^&*\(\)\-_\+\=,;`.]*)+(/|\.)?)+)[^\/])$", re.IGNORECASE)
 is_url = re.compile(r"(((http)s?://)?(w{3}\.)?([\w\-]+)(:\d)?\.([a-z]+)/((\.?(.+[^\/])+(/|\.)?)+)[^\/])$", re.IGNORECASE)
+scheme_pattern = re.compile(r"^((http)s?:)?(//).+")
 punc = punctuation.replace('/','')
+
+def has_scheme(url):
+    if scheme_pattern.match(url):
+        return True
+    else:
+        return False
+
+
+def clean_url(url):
+    url = url_unquote(url)
+
+    if not has_scheme(url):
+        slash_url = '//' + url
+        if has_scheme(slash_url):
+            url = slash_url
+        else:
+            return ''
+
+    return url
+
 
 def extract_urls(lines):
     links = []
@@ -104,9 +110,9 @@ def extract_urls(lines):
             word = word.lstrip(punctuation)
             valid_url = is_url.match(word)
             if valid_url:
-                links.append(valid_url.group())
+                links.append(clean_url(valid_url.group()))
 
-    return links
+    return [link for link in links if link]
 
 # ------------------------------------------------------------------------------
 def load_temp_dir():
@@ -247,6 +253,7 @@ def process_input_files(files):
         print('No valid URLs located within input files')
 
     return links
+
 
 def write_files_to_cwd(urlist, overwrite):
     if not overwrite:
