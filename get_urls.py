@@ -4,13 +4,11 @@ import os
 import re
 from string import punctuation
 import tempfile
+import time
 from urllib import request
 from urllib.error import URLError
-from prep_filename import get_name, get_path
+from prep_filename import get_name, get_path, get_type
 # ------------------------------------------------------------------------------
-# >>> if -i is relative and -d is outside of cwd, chdir ok here?
-# msg = 'Directory path entered is not valid: {}'.format(user_dir)
-# raise argparse.ArgumentTypeError(msg)
 
 def validate_dir(user_dir):
     user_dir = os.path.abspath(user_dir)
@@ -18,7 +16,6 @@ def validate_dir(user_dir):
     if not os.path.exists(user_dir):
         os.mkdir(user_dir)
 
-    # os.chdir(user_dir)
     return user_dir
 
 
@@ -111,7 +108,8 @@ def extract_urls(lines):
 # ------------------------------------------------------------------------------
 def load_temp_dir():
     temp_root = tempfile.mkdtemp()
-    temp_dir = os.mkdir(os.path.join(temp_root, 'get_urls_temp'))
+    temp_subname = 'GETURLS_TMP_{}'.format(int(time.time()))
+    temp_dir = os.mkdir(os.path.join(temp_root, temp_subname))
     return temp_root, temp_dir
 
 def save_to_filetype_subdirs(urlist, overwrite):
@@ -152,19 +150,61 @@ def save_to_filetype_subdirs(urlist, overwrite):
     return completed, failed
 
 
+def make_host_subdirs(net_paths):
+    subdir_check = [not os.path.exists(subdir) for subdir in net_paths]
+    new_subdirs = list(compress(net_paths, subdir_check))
+    for subdirtree in new_subdirs:
+        os.makedirs(subdirtree, exist_ok=True)
+    return new_subdirs
+
+
 def save_to_host_subdirs(urlist, overwrite):
+
     temp_root, temp_dir = load_temp_dir()
     hostpath_split = [tuple(url.rsplit('/',1)) for url in urlist]
-    host_dirs = sorted(set(subdir[0] for subdir in hostpath_split))
-    host_dir_map = {subdir: ix for ix, subdir in enumerate(host_dirs)}
+    netloc_paths = sorted(set(subdir[0] for subdir in hostpath_split))
 
+    ix_loc = list(map(str, range(len(netloc_paths))))
+    hostpath2ix = dict(zip(netloc_paths, ix_loc))
+
+    net_paths = [path.split('//')[1] if '//' in path else path for path in netloc_paths]
+    ix2subdir = dict(zip(ix_loc, net_paths))
+
+    for dir_ix in ix_loc:
+        temp_subdir = os.path.join(temp_dir, dir_ix)
+        os.mkdir(temp_subdir)
+
+    completed = []
+    failed = []
+
+    temp_ix_paths = {dir_ix: [] for dir_ix in ix_loc}
     for url, (hostpath, filename) in zip(urlist, hostpath_split):
-        temp_subdir = os.path.join(temp_dir, str(ix))
-        if not os.path.exists(temp_subdir):
-            os.mkdir(temp_subdir)
+        dir_ix = hostpath2ix[hostpath]
+        temp_path = os.path.join(hostpath2ix[hostpath], filename)
 
+        status = download(url, temp_path)
+        if status:
+            completed.append(url)
+            temp_ix_paths[dir_ix].append(temp_path)
+        else:
+            failed.append(url)
 
+    if not completed:
+        print('All downloads failed')
+        return completed, failed
 
+    new_subdirs = make_host_subdirs(net_paths)
+    for is_new, dir_ix in zip(new_subdirs, ix_loc):
+        for fpath in temp_ix_paths[dir_ix]:
+            final_subdir = ix2subdir[dir_ix]
+            if is_new or overwrite:
+                final_path = os.path.join(final_subdir, os.path.basename(fpath))
+            else:
+                final_path = get_name(os.path.basename(fpath), root=final_subdir)
+
+            os.rename(fpath, final_path)
+
+    return completed, failed
 
 
 def save_to_subdirs(urlist, dirsort_type, overwrite):
