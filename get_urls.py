@@ -207,14 +207,14 @@ def save_to_host_subdirs(urlist, overwrite):
 
     new_subdirs = make_host_subdirs(net_paths)
     for is_new, dir_ix in zip(new_subdirs, ix_loc):
-        for fpath in temp_ix_paths[dir_ix]:
+        for filepath in temp_ix_paths[dir_ix]:
             final_subdir = ix2subdir[dir_ix]
             if is_new or overwrite:
-                final_path = os.path.join(final_subdir, os.path.basename(fpath))
+                final_path = os.path.join(final_subdir, os.path.basename(filepath))
             else:
-                final_path = get_name(os.path.basename(fpath), root=final_subdir)
+                final_path = get_name(os.path.basename(filepath), root=final_subdir)
 
-            os.rename(fpath, final_path)
+            os.rename(filepath, final_path)
 
     return completed, failed
 

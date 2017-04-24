@@ -40,8 +40,8 @@ def get_name(filename, root=os.curdir):
         else:
             fn_out = filename
 
-    pathname = os.path.join(root, fn_out)
-    return pathname, fn_out
+    filepath = os.path.join(root, fn_out)
+    return filepath, fn_out
 
 # >>> change to check_path > input path or root + fn
 def url_to_path(url, root=os.curdir):
