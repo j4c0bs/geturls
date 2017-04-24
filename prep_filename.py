@@ -1,6 +1,7 @@
 import os
 import re
 from string import punctuation
+from urllib.parse import unquote as url_unquote
 # ------------------------------------------------------------------------------
 char_escape = str.maketrans({p: '\{}'.format(p) for p in punctuation})
 
@@ -42,13 +43,14 @@ def get_name(filename, root=os.curdir):
     pathname = os.path.join(root, fn_out)
     return pathname, fn_out
 
-
+# >>> change to check_path > input path or root + fn
 def url_to_path(url, root=os.curdir):
     filename = url.rsplit('/',1)[1]
     filepath = os.path.join(root, filename)
     return filepath, filename
 
 def get_path(url, root=os.curdir, overwrite=False):
+    filename = url_unquote(url.rsplit('/',1)[1])
     if overwrite:
         filepath = os.path.join(root, filename)
     else:
