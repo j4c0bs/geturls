@@ -5,6 +5,11 @@ from urllib.parse import unquote as url_unquote
 # ------------------------------------------------------------------------------
 char_escape = str.maketrans({p: '\{}'.format(p) for p in punctuation})
 
+
+def strip_path(url):
+    return url.rsplit('/',1)[1]
+
+
 def get_type(filename, subdir=False):
     if '.' not in filename or (filename.startswith('.') and filename.count('.') == 1):
         fn = filename
@@ -45,12 +50,13 @@ def get_name(filename, root=os.curdir):
 
 # >>> change to check_path > input path or root + fn
 def url_to_path(url, root=os.curdir):
-    filename = url.rsplit('/',1)[1]
+    filename = strip_path(url)
     filepath = os.path.join(root, filename)
     return filepath, filename
 
+
 def get_path(url, root=os.curdir, overwrite=False):
-    filename = url_unquote(url.rsplit('/',1)[1])
+    filename = url_unquote(strip_path(url))
     if overwrite:
         filepath = os.path.join(root, filename)
     else:

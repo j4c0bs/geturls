@@ -8,7 +8,7 @@ import time
 from urllib import request
 from urllib.error import URLError
 # from urllib.parse import unquote as url_unquote
-from pathname import get_name, get_path, get_type
+from pathname import get_name, get_path, get_type, strip_path
 # ------------------------------------------------------------------------------
 
 def validate_dir(user_dir):
@@ -70,7 +70,7 @@ def download(url, filepath=''):
 
     if data:
         if not filepath:
-            filepath = url.rsplit('/',1)[1]
+            filepath = strip_path(url)
         with open(filepath, 'wb') as f:
             f.write(data.read())
         return True
@@ -260,9 +260,9 @@ def process_input_files(files):
 
 def write_files_to_cwd(urlist, overwrite):
     if not overwrite:
-        url_to_fn = [(url, url.rsplit('/',1)[1]) for url in urlist]
+        url_to_fn = [(url, strip_path(url)) for url in urlist]
     else:
-        url_to_fn = [(url, get_name(url.rsplit('/',1)[1])) for url in urlist]
+        url_to_fn = [(url, get_name(strip_path(url))) for url in urlist]
 
     failed = []
     for (url, fn) in url_to_fn:
