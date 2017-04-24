@@ -192,7 +192,7 @@ def save_to_host_subdirs(urlist, overwrite):
     temp_ix_paths = {dir_ix: [] for dir_ix in ix_loc}
     for url, (hostpath, filename) in zip(urlist, hostpath_split):
         dir_ix = hostpath2ix[hostpath]
-        temp_path = os.path.join(hostpath2ix[hostpath], filename)
+        temp_path = os.path.join(temp_dir, hostpath2ix[hostpath], filename)
 
         status = download(url, temp_path)
         if status:
@@ -220,8 +220,11 @@ def save_to_host_subdirs(urlist, overwrite):
 
 
 def save_to_subdirs(urlist, dirsort_type, overwrite):
+    completed, failed = ([], [])
     if dirsort_type == 'type':
         completed, failed = save_to_filetype_subdirs(urlist, overwrite)
+    elif dirsort_type == 'host':
+        completed, failed = save_to_host_subdirs(urlist, overwrite)
 
     if failed:
         print('Failed:')
