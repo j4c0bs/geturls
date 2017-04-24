@@ -8,7 +8,7 @@ import time
 from urllib import request
 from urllib.error import URLError
 # from urllib.parse import unquote as url_unquote
-from prep_filename import get_name, get_path, get_type
+from pathname import get_name, get_path, get_type
 # ------------------------------------------------------------------------------
 
 def validate_dir(user_dir):
