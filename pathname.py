@@ -19,7 +19,7 @@ def get_type(filename, subdir=False):
     return fn, fn_type
 
 
-def get_name(filename, root=os.curdir):
+def check_name(filename, root=os.curdir):
     fn, fn_type = get_type(filename)
 
     target_dir = os.listdir(root)
@@ -55,11 +55,14 @@ def url_to_path(url, root=os.curdir):
     return filepath, filename
 
 
-def get_path(url, root=os.curdir, overwrite=False):
-    filename = url_unquote(strip_path(url))
+def get_path(url, filename='', root=os.curdir, overwrite=False):
+
+    if not filename:
+        filename = url_unquote(strip_path(url))
+
     if overwrite:
         filepath = os.path.join(root, filename)
     else:
-        filepath, filename = get_name(filename, root)
+        filepath, filename = check_name(filename, root)
 
     return filepath, filename

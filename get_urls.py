@@ -3,12 +3,10 @@ from itertools import compress
 import os
 import re
 from string import punctuation
-import tempfile
-import time
 from urllib import request
 from urllib.error import URLError
-# from urllib.parse import unquote as url_unquote
-from pathname import get_name, get_path, get_type, strip_path
+from dir_tools import confirm_dir, load_temp_dir, group_by_dir
+from pathname import check_name, get_path, get_type, strip_path
 # ------------------------------------------------------------------------------
 
 def validate_dir(user_dir):
@@ -77,6 +75,24 @@ def download(url, filepath=''):
     else:
         return False
 
+
+def batch_download_to_temp(urlist):
+    temp_root, temp_dir = load_temp_dir()
+    completed = []
+    failed = []
+    dir_groups = group_by_dir(urlist)
+    for net_subdir, url_name_list in dir_groups.items():
+        temp_subdir = os.path.join(temp_dir, str(hash(net_subdir)))
+        os.mkdir(temp_subdir)
+        for (url, filename) in url_name_list:
+            temp_path = os.path.join(temp_subdir, filename)
+            status = download(url, filepath=temp_path)
+            if status:
+                completed.append((temp_path, net_subdir, filename))
+            else:
+                failed.append(url)
+    return completed, failed
+
 # ------------------------------------------------------------------------------
 is_url = re.compile(r"(((http)s?://)?(w{3}\.)?([\w\-]+)(:\d)?\.([a-z]+)/((\.?(.+[^\/])+(/|\.)?)+)[^\/])$", re.IGNORECASE)
 scheme_pattern = re.compile(r"^((http)s?:)?(//).+")
@@ -115,14 +131,6 @@ def extract_urls(lines):
     return [link for link in links if link]
 
 # ------------------------------------------------------------------------------
-def load_temp_dir():
-    temp_root = tempfile.mkdtemp()
-    temp_subname = 'GETURLS_TMP_{}'.format(int(time.time()))
-    temp_dir = os.path.join(temp_root, temp_subname)
-    os.mkdir(temp_dir)
-
-    return temp_root, temp_dir
-
 def save_to_filetype_subdirs(urlist, overwrite):
     temp_root, temp_dir = load_temp_dir()
     namelist = []
@@ -147,9 +155,10 @@ def save_to_filetype_subdirs(urlist, overwrite):
     fn_types = [get_type(fn, subdir=True)[1] for fn in namelist]
     type_subdirs = sorted(set(fn_types))
 
-    for subdir in type_subdirs:
-        if not os.path.exists(subdir):
-            os.mkdir(subdir)
+    confirm_dir(type_subdirs)
+    # for subdir in type_subdirs:
+    #     if not os.path.exists(subdir):
+    #         os.mkdir(subdir)
 
     for temp_path, filename, filetype in zip(completed, namelist, fn_types):
         filepath = os.path.join(filetype, filename)
@@ -212,7 +221,7 @@ def save_to_host_subdirs(urlist, overwrite):
             if is_new or overwrite:
                 final_path = os.path.join(final_subdir, os.path.basename(filepath))
             else:
-                final_path = get_name(os.path.basename(filepath), root=final_subdir)
+                final_path = check_name(os.path.basename(filepath), root=final_subdir)
 
             os.rename(filepath, final_path)
 
@@ -239,6 +248,7 @@ def display(urlist):
     for url in urlist:
         print(url)
 
+
 def process_input_files(files):
     links = []
     for fn in files:
@@ -251,7 +261,7 @@ def process_input_files(files):
 
     if links:
         if len(files) > 1:
-            links = sorted(set(links))
+            links = sorted(set(links), key = lambda url: url[::-1])
     else:
         print('No valid URLs located within input files')
 
@@ -262,7 +272,7 @@ def write_files_to_cwd(urlist, overwrite):
     if not overwrite:
         url_to_fn = [(url, strip_path(url)) for url in urlist]
     else:
-        url_to_fn = [(url, get_name(strip_path(url))) for url in urlist]
+        url_to_fn = [(url, check_name(strip_path(url))) for url in urlist]
 
     failed = []
     for (url, fn) in url_to_fn:
@@ -301,7 +311,7 @@ def main():
         # if not args.overwrite:
         #     url_to_fn = [(url, url.rsplit('/',1)[1]) for url in urlist]
         # else:
-        #     url_to_fn = [(url, get_name(url.rsplit('/',1)[1])) for url in urlist]
+        #     url_to_fn = [(url, check_name(url.rsplit('/',1)[1])) for url in urlist]
 
     # display(urlist)
 
