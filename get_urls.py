@@ -76,8 +76,7 @@ def download(url, filepath=''):
         return False
 
 
-def batch_download_to_temp(urlist):
-    temp_root, temp_dir = load_temp_dir()
+def batch_download_to_temp(urlist, temp_dir):
     completed = []
     failed = []
     dir_groups = group_by_dir(urlist)
@@ -105,9 +104,7 @@ def has_scheme(url):
         return False
 
 
-def clean_url(url):
-    # url = url_unquote(url)
-
+def check_scheme(url):
     if not has_scheme(url):
         slash_url = '//' + url
         if has_scheme(slash_url):
@@ -126,7 +123,7 @@ def extract_urls(lines):
             word = word.lstrip(punctuation)
             valid_url = is_url.match(word)
             if valid_url:
-                links.append(clean_url(valid_url.group()))
+                links.append(check_scheme(valid_url.group()))
 
     return [link for link in links if link]
 
@@ -228,8 +225,17 @@ def save_to_host_subdirs(urlist, overwrite):
     return completed, failed
 
 
+
 def save_to_subdirs(urlist, dirsort_type, overwrite):
-    completed, failed = ([], [])
+    temp_root, temp_dir = load_temp_dir()
+    completed, failed = batch_download_to_temp(urlist, temp_dir)
+
+    if not completed:
+        print('No URLs downloaded')
+        # >>> TODO: what to return / exit?
+        return False
+
+
     if dirsort_type == 'type':
         completed, failed = save_to_filetype_subdirs(urlist, overwrite)
     elif dirsort_type == 'host':
