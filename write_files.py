@@ -1,8 +1,7 @@
 from itertools import groupby
 import os
-import time
 
-from pathname import get_type, get_path
+from pathname import get_type, get_path, split_name
 # ------------------------------------------------------------------------------
 def get_duplicates(all_names):
     duplicates = []
@@ -13,21 +12,7 @@ def get_duplicates(all_names):
         if len(namelist) != len(nameset):
             duplicates.extend([name for name in nameset if namelist.count(name) > 1])
 
-    return duplicates
-
-
-def to_temp_cwd(all_paths, all_names, duplicates, temp_root):
-    tmpcwd = os.path.join(temp_root, str(int(time.time())))
-    os.mkdir(tmpcwd)
-    updated_paths = []
-    updated_names = []
-    for temp_path, name in zip(all_paths, all_names):
-        new_path, filename = get_path(name, root=tmpcwd, overwrite=(name not in duplicates))
-        os.rename(temp_path, new_path)
-        updated_paths.append(new_path)
-        updated_names.append(filename)
-
-    return updated_paths, updated_names
+    return set(duplicates)
 
 
 def to_cwd(completed, temp_root, overwrite):
@@ -37,8 +22,20 @@ def to_cwd(completed, temp_root, overwrite):
 
     if not (one_file or one_folder):
         duplicates = get_duplicates(all_names[:])
+
         if duplicates:
-            all_paths, all_names = to_temp_cwd(all_paths, all_names, duplicates, temp_root)
+            counter = {fn:0 for fn in duplicates}
+            for ix, fn in enumerate(all_names):
+                if fn in duplicates:
+                    num_suffix = counter.get(fn, 0)
+                    name, filetype = split_name(fn)
+
+                    if filetype:
+                        filetype = '.' + filetype
+
+                    new_name = ''.join([name, '-', str(num_suffix), filetype])
+                    all_names[ix] = new_name
+                    counter[fn] += 1
 
     for filepath, filename in zip(all_paths, all_names):
         real_path, real_name = get_path(filename, overwrite=overwrite)
