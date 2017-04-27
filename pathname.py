@@ -10,14 +10,15 @@ def strip_path(url):
     return url.rsplit('/',1)[1]
 
 
-# >>> change to split_name and use red get_type
-# fn_type = '' if not subdir else 'unknown_filetype'
-def get_type(filename):
+def get_type(filename, subdir=True):
     if '.' not in filename or (filename.startswith('.') and filename.count('.') == 1):
         filetype = ''
     else:
         filetype = filename.rsplit('.', 1)[1]
+    if subdir and not filetype:
+        filetype = 'unknown_filetype'
     return filetype
+
 
 def split_name(filename, subdir=False):
     filetype = get_type(filename)

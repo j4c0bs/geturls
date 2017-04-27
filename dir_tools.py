@@ -3,7 +3,7 @@ import tempfile
 import time
 from urllib.parse import unquote as url_unquote
 # ------------------------------------------------------------------------------
-def confirm_dir(*subdirs):
+def confirm_dirs(*subdirs):
     for subdir in subdirs:
         if not os.path.exists(subdir):
             os.mkdir(subdir)

@@ -5,8 +5,9 @@ import re
 from string import punctuation
 from urllib import request
 from urllib.error import URLError
-from dir_tools import confirm_dir, load_temp_dir, group_by_dir
+from dir_tools import confirm_dirs, load_temp_dir, group_by_dir
 from pathname import check_name, get_path, get_type, strip_path
+import write_files
 # ------------------------------------------------------------------------------
 
 def validate_dir(user_dir):
@@ -128,102 +129,101 @@ def extract_urls(lines):
     return [link for link in links if link]
 
 # ------------------------------------------------------------------------------
-def save_to_filetype_subdirs(urlist, overwrite):
-    temp_root, temp_dir = load_temp_dir()
-    namelist = []
 
-    completed = []
-    failed = []
+# def save_to_filetype_subdirs(urlist, overwrite):
+#     temp_root, temp_dir = load_temp_dir()
+#     namelist = []
+#
+#     completed = []
+#     failed = []
+#
+#     for url in urlist:
+#         filepath, filename = get_path(url, root=temp_dir, overwrite=overwrite)
+#         status = download(url, filepath)
+#         if status:
+#             print('Downloaded:', url)
+#             completed.append(filepath)
+#             namelist.append(filename)
+#         else:
+#             failed.append(url)
+#
+#     if not completed:
+#         print('All downloads failed')
+#         return completed, failed
+#
+#     fn_types = [get_type(fn, subdir=True)[1] for fn in namelist]
+#     type_subdirs = sorted(set(fn_types))
+#
+#     confirm_dir(type_subdirs)
+#     # for subdir in type_subdirs:
+#     #     if not os.path.exists(subdir):
+#     #         os.mkdir(subdir)
+#
+#     for temp_path, filename, filetype in zip(completed, namelist, fn_types):
+#         filepath = os.path.join(filetype, filename)
+#         os.rename(temp_path, filepath)
+#
+#     check_temp = os.listdir(temp_dir)
+#     if check_temp:
+#         print('check_temp:', check_temp)
+#
+#     return completed, failed
 
-    for url in urlist:
-        filepath, filename = get_path(url, root=temp_dir, overwrite=overwrite)
-        status = download(url, filepath)
-        if status:
-            print('Downloaded:', url)
-            completed.append(filepath)
-            namelist.append(filename)
-        else:
-            failed.append(url)
-
-    if not completed:
-        print('All downloads failed')
-        return completed, failed
-
-    fn_types = [get_type(fn, subdir=True)[1] for fn in namelist]
-    type_subdirs = sorted(set(fn_types))
-
-    confirm_dir(type_subdirs)
-    # for subdir in type_subdirs:
-    #     if not os.path.exists(subdir):
-    #         os.mkdir(subdir)
-
-    for temp_path, filename, filetype in zip(completed, namelist, fn_types):
-        filepath = os.path.join(filetype, filename)
-        os.rename(temp_path, filepath)
-
-    check_temp = os.listdir(temp_dir)
-    if check_temp:
-        print('check_temp:', check_temp)
-
-    return completed, failed
-
-
-def make_host_subdirs(net_paths):
-    subdir_check = [not os.path.exists(subdir) for subdir in net_paths]
-    new_subdirs = list(compress(net_paths, subdir_check))
-    for subdirtree in new_subdirs:
-        os.makedirs(subdirtree, exist_ok=True)
-    return new_subdirs
-
-
-def save_to_host_subdirs(urlist, overwrite):
-
-    temp_root, temp_dir = load_temp_dir()
-    hostpath_split = [tuple(url.rsplit('/',1)) for url in urlist]
-    netloc_paths = sorted(set(subdir[0] for subdir in hostpath_split))
-
-    ix_loc = list(map(str, range(len(netloc_paths))))
-    hostpath2ix = dict(zip(netloc_paths, ix_loc))
-
-    net_paths = [path.split('//')[1] if '//' in path else path for path in netloc_paths]
-    ix2subdir = dict(zip(ix_loc, net_paths))
-
-    for dir_ix in ix_loc:
-        temp_subdir = os.path.join(temp_dir, dir_ix)
-        os.mkdir(temp_subdir)
-
-    completed = []
-    failed = []
-
-    temp_ix_paths = {dir_ix: [] for dir_ix in ix_loc}
-    for url, (hostpath, filename) in zip(urlist, hostpath_split):
-        dir_ix = hostpath2ix[hostpath]
-        temp_path = os.path.join(temp_dir, hostpath2ix[hostpath], filename)
-
-        status = download(url, temp_path)
-        if status:
-            completed.append(url)
-            temp_ix_paths[dir_ix].append(temp_path)
-        else:
-            failed.append(url)
-
-    if not completed:
-        print('All downloads failed')
-        return completed, failed
-
-    new_subdirs = make_host_subdirs(net_paths)
-    for is_new, dir_ix in zip(new_subdirs, ix_loc):
-        for filepath in temp_ix_paths[dir_ix]:
-            final_subdir = ix2subdir[dir_ix]
-            if is_new or overwrite:
-                final_path = os.path.join(final_subdir, os.path.basename(filepath))
-            else:
-                final_path = check_name(os.path.basename(filepath), root=final_subdir)
-
-            os.rename(filepath, final_path)
-
-    return completed, failed
-
+# def make_host_subdirs(net_paths):
+#     subdir_check = [not os.path.exists(subdir) for subdir in net_paths]
+#     new_subdirs = list(compress(net_paths, subdir_check))
+#     for subdirtree in new_subdirs:
+#         os.makedirs(subdirtree, exist_ok=True)
+#     return new_subdirs
+#
+#
+# def save_to_host_subdirs(urlist, overwrite):
+#
+#     temp_root, temp_dir = load_temp_dir()
+#     hostpath_split = [tuple(url.rsplit('/',1)) for url in urlist]
+#     netloc_paths = sorted(set(subdir[0] for subdir in hostpath_split))
+#
+#     ix_loc = list(map(str, range(len(netloc_paths))))
+#     hostpath2ix = dict(zip(netloc_paths, ix_loc))
+#
+#     net_paths = [path.split('//')[1] if '//' in path else path for path in netloc_paths]
+#     ix2subdir = dict(zip(ix_loc, net_paths))
+#
+#     for dir_ix in ix_loc:
+#         temp_subdir = os.path.join(temp_dir, dir_ix)
+#         os.mkdir(temp_subdir)
+#
+#     completed = []
+#     failed = []
+#
+#     temp_ix_paths = {dir_ix: [] for dir_ix in ix_loc}
+#     for url, (hostpath, filename) in zip(urlist, hostpath_split):
+#         dir_ix = hostpath2ix[hostpath]
+#         temp_path = os.path.join(temp_dir, hostpath2ix[hostpath], filename)
+#
+#         status = download(url, temp_path)
+#         if status:
+#             completed.append(url)
+#             temp_ix_paths[dir_ix].append(temp_path)
+#         else:
+#             failed.append(url)
+#
+#     if not completed:
+#         print('All downloads failed')
+#         return completed, failed
+#
+#     new_subdirs = make_host_subdirs(net_paths)
+#     for is_new, dir_ix in zip(new_subdirs, ix_loc):
+#         for filepath in temp_ix_paths[dir_ix]:
+#             final_subdir = ix2subdir[dir_ix]
+#             if is_new or overwrite:
+#                 final_path = os.path.join(final_subdir, os.path.basename(filepath))
+#             else:
+#                 final_path = check_name(os.path.basename(filepath), root=final_subdir)
+#
+#             os.rename(filepath, final_path)
+#
+#     return completed, failed
 
 
 def save_to_subdirs(urlist, dirsort_type, overwrite):
@@ -235,16 +235,12 @@ def save_to_subdirs(urlist, dirsort_type, overwrite):
         # >>> TODO: what to return / exit?
         return False
 
-
-    if dirsort_type == 'type':
-        completed, failed = save_to_filetype_subdirs(urlist, overwrite)
+    if not dirsort_type:
+        write_files.to_cwd(completed, temp_root, overwrite)
+    elif dirsort_type == 'type':
+        write_files.to_filetype_subdirs(completed, temp_root, overwrite)
     elif dirsort_type == 'host':
-        completed, failed = save_to_host_subdirs(urlist, overwrite)
-
-    if failed:
-        print('Failed:')
-        for url in failed:
-            print(url)
+        write_files.to_host_subdirs(completed, temp_root, overwrite)
 
     return completed, failed
 
@@ -274,24 +270,24 @@ def process_input_files(files):
     return links
 
 
-def write_files_to_cwd(urlist, overwrite):
-    if not overwrite:
-        url_to_fn = [(url, strip_path(url)) for url in urlist]
-    else:
-        url_to_fn = [(url, check_name(strip_path(url))) for url in urlist]
-
-    failed = []
-    for (url, fn) in url_to_fn:
-        if not download(url, fn):
-            failed.append(url)
-        else:
-            print('completed:', url)
-
-    if failed:
-        print('-'*80)
-        print('The following URLs were not downloaded:')
-        for url in failed:
-            print(url)
+# def write_files_to_cwd(urlist, overwrite):
+#     if not overwrite:
+#         url_to_fn = [(url, strip_path(url)) for url in urlist]
+#     else:
+#         url_to_fn = [(url, check_name(strip_path(url))) for url in urlist]
+#
+#     failed = []
+#     for (url, fn) in url_to_fn:
+#         if not download(url, fn):
+#             failed.append(url)
+#         else:
+#             print('completed:', url)
+#
+#     if failed:
+#         print('-'*80)
+#         print('The following URLs were not downloaded:')
+#         for url in failed:
+#             print(url)
 
 def main():
     args = parse_arguments()
@@ -309,32 +305,13 @@ def main():
 
     sort_options = (args.hostsort, args.namesort, args.typesort)
 
+    dirsort_type = ''
+
     if any(sort_options):
         dirsort_type = list(compress(('host', 'name', 'type'), sort_options))[0]
-        completed, failed = save_to_subdirs(urlist, dirsort_type, args.overwrite)
-    else:
-        write_files_to_cwd(urlist, args.overwrite)
-        # if not args.overwrite:
-        #     url_to_fn = [(url, url.rsplit('/',1)[1]) for url in urlist]
-        # else:
-        #     url_to_fn = [(url, check_name(url.rsplit('/',1)[1])) for url in urlist]
 
-    # display(urlist)
+    completed, failed = save_to_subdirs(urlist, dirsort_type, args.overwrite)
 
-    # failed = []
-    # for (url, fn) in url_to_fn:
-    #     completed = download(url, fn)
-    #     if not completed:
-    #         failed.append(url)
-    #     else:
-    #         print('completed:', url)
-    #
-    # if failed:
-    #     print('-'*80)
-    #     print('The following URLs were not downloaded:')
-    #     for url in failed:
-    #         print(url)
-    #     print('-'*80)
 
 # ------------------------------------------------------------------------------
 if __name__ == '__main__':
