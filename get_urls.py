@@ -1,11 +1,10 @@
 import argparse
 from itertools import compress
 import os
-import re
-from string import punctuation
 from urllib import request
 from urllib.error import URLError
 from dir_tools import confirm_dirs, load_temp_dir, group_by_dir
+from parser import extract_urls
 from pathname import check_name, get_path, get_type, strip_path
 import write_files
 # ------------------------------------------------------------------------------
@@ -94,39 +93,40 @@ def batch_download_to_temp(urlist, temp_dir):
     return completed, failed
 
 # ------------------------------------------------------------------------------
-is_url = re.compile(r"(((http)s?://)?(w{3}\.)?([\w\-]+)(:\d)?\.([a-z]+)/((\.?(.+[^\/])+(/|\.)?)+)[^\/])$", re.IGNORECASE)
-scheme_pattern = re.compile(r"^((http)s?:)?(//).+")
-punc = punctuation.replace('/','')
 
-def has_scheme(url):
-    if scheme_pattern.match(url):
-        return True
-    else:
-        return False
-
-
-def check_scheme(url):
-    if not has_scheme(url):
-        slash_url = '//' + url
-        if has_scheme(slash_url):
-            url = slash_url
-        else:
-            return ''
-
-    return url
-
-
-def extract_urls(lines):
-    links = []
-    for line in lines:
-        split_words = (word for word in line.split(' ') if not word.isalnum())
-        for word in split_words:
-            word = word.lstrip(punctuation)
-            valid_url = is_url.match(word)
-            if valid_url:
-                links.append(check_scheme(valid_url.group()))
-
-    return [link for link in links if link]
+# is_url = re.compile(r"(((http)s?://)?(w{3}\.)?([\w\-]+)(:\d)?\.([a-z]+)/((\.?(.+[^\/])+(/|\.)?)+)[^\/])$", re.IGNORECASE)
+# scheme_pattern = re.compile(r"^((http)s?:)?(//).+")
+# punc = punctuation.replace('/','')
+#
+# def has_scheme(url):
+#     if scheme_pattern.match(url):
+#         return True
+#     else:
+#         return False
+#
+#
+# def check_scheme(url):
+#     if not has_scheme(url):
+#         slash_url = '//' + url
+#         if has_scheme(slash_url):
+#             url = slash_url
+#         else:
+#             return ''
+#
+#     return url
+#
+#
+# def extract_urls(lines):
+#     links = []
+#     for line in lines:
+#         split_words = (word for word in line.split(' ') if not word.isalnum())
+#         for word in split_words:
+#             word = word.lstrip(punctuation)
+#             valid_url = is_url.match(word)
+#             if valid_url:
+#                 links.append(check_scheme(valid_url.group()))
+#
+#     return [link for link in links if link]
 
 # ------------------------------------------------------------------------------
 
@@ -235,12 +235,13 @@ def save_to_subdirs(urlist, dirsort_type, overwrite):
         # >>> TODO: what to return / exit?
         return False
 
-    if not dirsort_type:
-        write_files.to_cwd(completed, temp_root, overwrite)
-    elif dirsort_type == 'type':
+    if dirsort_type == 'type':
         write_files.to_filetype_subdirs(completed, temp_root, overwrite)
     elif dirsort_type == 'host':
         write_files.to_host_subdirs(completed, temp_root, overwrite)
+    else:
+        write_files.to_cwd(completed, temp_root, overwrite)
+
 
     return completed, failed
 
