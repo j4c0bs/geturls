@@ -20,7 +20,7 @@ def validate_dir(user_dir):
 
 def parse_arguments():
     parser = argparse.ArgumentParser(prog='get_urls',
-                                     description='downloads urls parsed from file')
+                                     description='downloads urls parsed from file(s)')
 
     input_group = parser.add_mutually_exclusive_group(required=True)
     subdir_group = parser.add_mutually_exclusive_group()
@@ -230,6 +230,10 @@ def save_to_subdirs(urlist, dirsort_type, overwrite):
     temp_root, temp_dir = load_temp_dir()
     completed, failed = batch_download_to_temp(urlist, temp_dir)
 
+    # print('completed dl to /tmp')
+    # for tmpath in completed:
+    #     print(tmpath)
+
     if not completed:
         print('No URLs downloaded')
         # >>> TODO: what to return / exit?
@@ -303,6 +307,10 @@ def main():
 
     if args.reject:
         urlist = [url for url in urlist if all((not url.endswith(ft) for ft in args.reject))]
+
+    if args.extract:
+        print(', '.join(urlist))
+        return
 
     sort_options = (args.hostsort, args.namesort, args.typesort)
 

@@ -29,14 +29,14 @@ def to_cwd(completed, temp_root, overwrite):
 # ------------------------------------------------------------------------------
 def to_filetype_subdirs(completed, temp_root, overwrite):
     all_paths, all_netdirs, all_names = list(zip(*completed))
-    fn_types = [get_type(fn, subdir=True)[1] for fn in all_names]
+    fn_types = [get_type(fn, subdir=True) for fn in all_names]
     type_subdirs = sorted(set(fn_types))
     confirm_dirs(*type_subdirs)
 
     namecache = set()
     for temp_path, filename, filetype in zip(all_paths, all_names, fn_types):
         discrete_name = filename not in namecache
-        filepath = get_path(filename, root=filetype, overwrite=(overwrite and discrete_name))
+        filepath, filename = get_path(filename, root=filetype, overwrite=(overwrite and discrete_name))
         os.rename(temp_path, filepath)
         namecache.add(filename)
 
@@ -50,6 +50,6 @@ def to_host_subdirs(completed, temp_root, overwrite):
     namecache = set()
     for temp_path, net_path, filename in zip(all_paths, all_netdirs, all_names):
         discrete_name = filename not in namecache
-        filepath = get_path(filename, root=net_path, overwrite=(overwrite and discrete_name))
+        filepath, filename = get_path(filename, root=net_path, overwrite=(overwrite and discrete_name))
         os.rename(temp_path, filepath)
         namecache.add(filename)
