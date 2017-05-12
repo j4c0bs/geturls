@@ -8,6 +8,8 @@ from dir_tools import confirm_dirs, load_temp_dir, group_by_dir
 from parser import extract_urls
 from pathname import check_name, get_path, get_type, strip_path
 import write_files
+
+from progressbar import Progressbar
 # ------------------------------------------------------------------------------
 
 def validate_dir(user_dir):
@@ -78,16 +80,47 @@ def get_data(file_url):
 
 
 def download(url, filepath=''):
-    data = get_data(url)
+    response = get_data(url)
 
-    if data:
+    if response:
         if not filepath:
             filepath = strip_path(url)
-        with open(filepath, 'wb') as f:
-            f.write(data.read())
+
+        msg = 'Downloading: {}'.format(url)
+        print(msg, end='')
+        print('\r'*len(msg))
+
+        if response.getheader('Accept-Ranges') == 'bytes':
+            total_bytes = int(response.getheader('Content-Length'))
+            progressbar = Progressbar(total_bytes)
+            nbytes = 0
+
+            with open(filepath, 'wb') as f:
+                while nbytes < total_bytes:
+                    f.write(response.read(2**13))
+                    progressbar(2**13)
+                    nbytes += 2**13
+
+        else:
+            with open(filepath, 'wb') as f:
+                f.write(response.read())
+
         return True
     else:
         return False
+
+
+# def download(url, filepath=''):
+#     data = get_data(url)
+#
+#     if data:
+#         if not filepath:
+#             filepath = strip_path(url)
+#         with open(filepath, 'wb') as f:
+#             f.write(data.read())
+#         return True
+#     else:
+#         return False
 
 
 def batch_download_to_temp(urlist, temp_dir):
