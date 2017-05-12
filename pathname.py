@@ -23,7 +23,7 @@ def get_type(filename, subdir=True):
 def split_name(filename, subdir=False):
     filetype = get_type(filename)
     if filetype:
-        filename = filename.split('.')[0]
+        filename = filename.rsplit('.', 1)[0]
 
     return filename, filetype
 

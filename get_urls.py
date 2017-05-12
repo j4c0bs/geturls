@@ -3,6 +3,7 @@ from itertools import compress
 import os
 from urllib import request
 from urllib.error import URLError
+import time
 from dir_tools import confirm_dirs, load_temp_dir, group_by_dir
 from parser import extract_urls
 from pathname import check_name, get_path, get_type, strip_path
@@ -50,7 +51,19 @@ def parse_arguments():
     parser.add_argument('--reject', '-r', type=str, nargs='+',
                          help='Skip filetypes entered')
 
+    parser.add_argument('--log', '-l', type=argparse.FileType('a'),
+                         help='Write / append to download log file')
+
     return parser.parse_args()
+
+# ------------------------------------------------------------------------------
+def timestamp():
+    """Timestamp using locale’s appropriate date, time representation
+    Returns: tuple (str, str)
+    """
+
+    return (time.strftime('%x'), time.strftime('%X'))
+
 
 # ------------------------------------------------------------------------------
 def get_data(file_url):
@@ -88,7 +101,7 @@ def batch_download_to_temp(urlist, temp_dir):
             temp_path = os.path.join(temp_subdir, filename)
             status = download(url, filepath=temp_path)
             if status:
-                completed.append((temp_path, net_subdir, filename))
+                completed.append((temp_path, url, net_subdir, filename, timestamp()))
             else:
                 failed.append(url)
     return completed, failed
@@ -98,24 +111,19 @@ def save_to_subdirs(urlist, dirsort_type, overwrite):
     temp_root, temp_dir = load_temp_dir()
     completed, failed = batch_download_to_temp(urlist, temp_dir)
 
-    # print('completed dl to /tmp')
-    # for tmpath in completed:
-    #     print(tmpath)
-
     if not completed:
-        print('No URLs downloaded')
-        # >>> TODO: what to return / exit?
-        return False
+        print('Download failed for all input URLs')
+        return [], failed
 
     if dirsort_type == 'type':
-        write_files.to_filetype_subdirs(completed, temp_root, overwrite)
+        log_details = write_files.to_filetype_subdirs(completed, temp_root, overwrite)
     elif dirsort_type == 'host':
-        write_files.to_host_subdirs(completed, temp_root, overwrite)
+        log_details = write_files.to_host_subdirs(completed, temp_root, overwrite)
     else:
-        write_files.to_cwd(completed, temp_root, overwrite)
+        log_details = write_files.to_cwd(completed, temp_root, overwrite)
 
 
-    return completed, failed
+    return log_details, failed
 
 
 def display(urlist):
@@ -159,7 +167,6 @@ def main():
         urlist = [url for url in urlist if all((not url.endswith(ft) for ft in reject_types))]
 
     if args.extract:
-        # print(', '.join(urlist))
         for url in urlist:
             print(url)
         return
@@ -171,8 +178,10 @@ def main():
     else:
         dirsort_type = ''
 
-    completed, failed = save_to_subdirs(urlist, dirsort_type, args.overwrite)
+    log_details, failed = save_to_subdirs(urlist, dirsort_type, args.overwrite)
 
+    if args.log and log_details:
+        write_files.to_logfile(args.log.name, log_details)
 
 # ------------------------------------------------------------------------------
 if __name__ == '__main__':
