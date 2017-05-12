@@ -5,7 +5,6 @@ from urllib.parse import unquote as url_unquote
 # ------------------------------------------------------------------------------
 def confirm_dirs(*subdirs):
     for subdir in subdirs:
-        print('confirm_dirs:', subdir)
         if not os.path.exists(subdir):
             os.mkdir(subdir)
 
