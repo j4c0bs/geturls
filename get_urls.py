@@ -10,6 +10,9 @@ from pathname import check_name, get_path, get_type, strip_path
 import write_files
 
 from progressbar import Progressbar
+
+progressbar = Progressbar()
+
 # ------------------------------------------------------------------------------
 
 def validate_dir(user_dir):
@@ -53,6 +56,9 @@ def parse_arguments():
     parser.add_argument('--reject', '-r', type=str, nargs='+',
                          help='Skip filetypes entered')
 
+    parser.add_argument('--wait', '-w', type=float,
+                         help='Seconds to wait in between url requests. Defaults to 0.1')
+
     parser.add_argument('--log', '-l', type=argparse.FileType('a'),
                          help='Write / append to download log file')
 
@@ -79,8 +85,6 @@ def get_data(file_url):
         return data
 
 
-progressbar = Progressbar()
-
 def download(url, filepath=''):
     response = get_data(url)
 
@@ -92,9 +96,7 @@ def download(url, filepath=''):
             total_bytes = int(response.getheader('Content-Length'))
             progressbar.reset(url=url, total_bytes=total_bytes)
             read_bytes = 0
-            # nbytes = 2**13
             nbytes = 1024
-            # nbytes = 2**16
 
             with open(filepath, 'wb') as f:
                 while read_bytes < total_bytes:
@@ -104,9 +106,8 @@ def download(url, filepath=''):
                     progressbar.update(nbytes)
                     read_bytes += nbytes
 
-            progressbar.finish()
-
         else:
+            print('Downloading:', url)
             with open(filepath, 'wb') as f:
                 f.write(response.read())
 
@@ -128,12 +129,16 @@ def download(url, filepath=''):
 #         return False
 
 
-def batch_download_to_temp(urlist, temp_dir):
+def batch_download_to_temp(urlist, temp_dir, wait=0.1):
+    """Downloads all valid URLs to tmp subdirectory and collects details on completed requests.
+
+    Returns: lists
+    """
+
     completed = []
     failed = []
     dir_groups = group_by_dir(urlist)
     for net_subdir, url_name_list in dir_groups.items():
-        time.sleep(.5)
         temp_subdir = os.path.join(temp_dir, str(hash(net_subdir)))
         os.mkdir(temp_subdir)
         for (url, filename) in url_name_list:
@@ -143,12 +148,14 @@ def batch_download_to_temp(urlist, temp_dir):
                 completed.append((temp_path, url, net_subdir, filename, timestamp()))
             else:
                 failed.append(url)
+            time.sleep(wait)
     return completed, failed
 
+
 # ------------------------------------------------------------------------------
-def save_to_subdirs(urlist, dirsort_type, overwrite):
+def save_to_subdirs(urlist, dirsort_type, overwrite, wait):
     temp_root, temp_dir = load_temp_dir()
-    completed, failed = batch_download_to_temp(urlist, temp_dir)
+    completed, failed = batch_download_to_temp(urlist, temp_dir, wait=wait)
 
     if not completed:
         print('Download failed for all input URLs')
@@ -165,10 +172,10 @@ def save_to_subdirs(urlist, dirsort_type, overwrite):
     return log_details, failed
 
 
-def display(urlist):
-    print('input urlist:')
-    for url in urlist:
-        print(url)
+# def display(urlist):
+#     print('input urlist:')
+#     for url in urlist:
+#         print(url)
 
 
 def process_input_files(files):
@@ -217,7 +224,7 @@ def main():
     else:
         dirsort_type = ''
 
-    log_details, failed = save_to_subdirs(urlist, dirsort_type, args.overwrite)
+    log_details, failed = save_to_subdirs(urlist, dirsort_type, args.overwrite, args.wait)
 
     if args.log and log_details:
         write_files.to_logfile(args.log.name, log_details)

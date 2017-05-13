@@ -1,3 +1,4 @@
+from itertools import takewhile
 import os
 import re
 from string import punctuation
@@ -15,13 +16,17 @@ def get_type(filename, subdir=True):
         filetype = ''
     else:
         filetype = filename.rsplit('.', 1)[1]
+        if any((p in filetype for p in punctuation)):
+            ft = list(takewhile(lambda s: s.isalnum(), filetype))
+            filetype = ''.join(ft)
+
     if subdir and not filetype:
         filetype = 'unknown_filetype'
     return filetype
 
 
 def split_name(filename, subdir=False):
-    filetype = get_type(filename)
+    filetype = get_type(filename, subdir=subdir)
     if filetype:
         filename = filename.rsplit('.', 1)[0]
 
@@ -50,7 +55,13 @@ def check_name(filename, root=os.curdir):
 
         if end_digits:
             fn_suffix = str(max(end_digits) + 1)
-            fn_out = ''.join([fn, '-', fn_suffix, '.', fn_type])
+
+            if fn_type:
+                fn_end = '.' + fn_type
+            else:
+                fn_end = ''
+
+            fn_out = ''.join([fn, '-', fn_suffix, fn_end])
         else:
             fn_out = filename
 

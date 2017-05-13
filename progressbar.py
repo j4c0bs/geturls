@@ -29,18 +29,15 @@ class Progressbar(object):
         self.current_total = 0
         self.previous_total = 0
         self.rate = deque([], 5)
-        self.time_tracker = []
 
 
     def set_bar_length(self):
         self.line_length = os.get_terminal_size()[0]
-        # if self.line_length >= 76:
-        #     self.bar_length = 40
-        # else:
-        #     self.bar_length = self.line_length - 16
-        self.bar_length = self.line_length - 30
+        if self.line_length < 50:
+            self.bar_length = int(self.line_length // 2)
+        else:
+            self.bar_length = self.line_length - 40
 
-        # print('self.bar_length:', self.bar_length)
 
     def set_total(self, n):
         self.total = n
@@ -54,22 +51,12 @@ class Progressbar(object):
         self.set_bar_length()
         self.set_total(total_bytes)
         self.url = url
-        self.time_tracker.append((time.time(), url))
-
-
-    def finish(self):
-        pass
-        # print('\n\n')
-        # print('-'*self.line_length)
 
 
     def draw_bar(self, ix=0):
         a = '['
         marks = '#' * ix
         self.bar = a + marks.ljust(self.bar_length, '-') + '] '
-        # self.bar = self.bar.center(self.line_length, '*')
-        # print(self.bar, end='')
-        # print('\r' * self.line_length, end='')
 
 
     def draw_display(self, complete=False):
@@ -82,33 +69,29 @@ class Progressbar(object):
         else:
             text_url = self.url
 
-
         url_tot = '{}{}'.format(text_url.ljust(line_space, ' '), cum_total)
 
         rate_text = self.download_rate()
         bar_tot = '{}{}'.format(self.bar.ljust(self.line_length - len(rate_text), ' '), rate_text)
         text = '\r{}{}'.format(url_tot, bar_tot)
         back = self.line_length * 2
-        # back = len(url_tot) + len(bar_tot)
         print(text, end='')
 
         if not complete:
             print('\b' * back, end='')
         else:
-            # print('\n\n')
+            print('\b' * self.line_length, end='')
             print('-'*self.line_length)
 
 
     def download_rate(self):
         kb_delta = (self.current_total - self.previous_total) / 1000
         self.previous_total = self.current_total
-
         now = time.time()
         secs_delta = now - self.previous_secs
         self.previous_secs = now
         current_rate = kb_delta / secs_delta
         self.rate.append(current_rate)
-
         rate_text = '[{:.1f} kbps] '.format(sum(self.rate)/len(self.rate))
         return rate_text
 
@@ -126,7 +109,6 @@ class Progressbar(object):
             ix = self.bar_length
             self.draw_bar(ix)
             self.draw_display(complete=True)
-
         elif ix > self.mkcache:
             self.mkcache = ix
             self.draw_bar(ix)
