@@ -1,79 +1,146 @@
+from collections import deque
 import os
+import time
 
-# ------------------------------------------------------------------------------
-user_msg = {'TEST':'>>> Test message'}
 
-# ------------------------------------------------------------------------------
+def byte_unit(n):
+    if n // 10**9:
+        val = n / 10**9
+        unit = 'GB'
+    elif n // 10**6:
+        val = n / 10**6
+        unit = 'MB'
+    else:
+        val = n / 10**3
+        unit = 'KB'
+    return '{:.2f} {}'.format(val, unit)
+
+
+
 class Progressbar(object):
-    def __init__(self, total, message='', msg0='', msg1=''):
-        self.total = total
-        self.message = message
-        self.msg0 = msg0
-        self.msg1 = msg1
-        self.back = os.get_terminal_size()[0]
-        self.set_length()
+    def __init__(self):
+        self.line_length = os.get_terminal_size()[0]
+        self.total = 0
+        self.backspace = 0
+        self.message = ''
+        self.url = ''
+        self.set_bar_length()
         self.mkcache = 0
-        self.last = 0
-        # print('\n')
-
-    def __call__(self, n):
-        self.last += n
-        self.update(self.last)
+        self.current_total = 0
+        self.previous_total = 0
+        self.rate = deque([], 5)
+        self.time_tracker = []
 
 
-    def welcome(self):
-        self.print_message(self.msg0)
+    def set_bar_length(self):
+        self.line_length = os.get_terminal_size()[0]
+        # if self.line_length >= 76:
+        #     self.bar_length = 40
+        # else:
+        #     self.bar_length = self.line_length - 16
+        self.bar_length = self.line_length - 30
 
-    def print_message(self, msg):
-        if (msg and (msg in user_msg.keys())):
-            print(user_msg[msg])
+        # print('self.bar_length:', self.bar_length)
 
-    def set_length(self):
-        if os.get_terminal_size()[0] >= 76:
-            self.length = 72
-        else:
-            self.length = os.get_terminal_size()[0] - 4
+    def set_total(self, n):
+        self.total = n
+        self.display_total = byte_unit(n)
+        self.mkcache = 0
+        self.current_total = 0
+        self.previous_secs = time.time()
 
-    def make_bar(self, ix):
-        a = ' ['
+
+    def reset(self, total_bytes=0, url=''):
+        self.set_bar_length()
+        self.set_total(total_bytes)
+        self.url = url
+        self.time_tracker.append((time.time(), url))
+
+
+    def finish(self):
+        pass
+        # print('\n\n')
+        # print('-'*self.line_length)
+
+
+    def draw_bar(self, ix=0):
+        a = '['
         marks = '#' * ix
-        self.bar = a + marks.ljust(self.length - 1, '-') + '] '
-        self.bar = self.bar.center(self.back, ' ')
+        self.bar = a + marks.ljust(self.bar_length, '-') + '] '
+        # self.bar = self.bar.center(self.line_length, '*')
+        # print(self.bar, end='')
+        # print('\r' * self.line_length, end='')
 
-    def print_bar(self):
-        print(self.bar, end='')
-        print('\r' * self.back, end='')
 
-    def update(self, current):
-        self.last = current
-        progress = current / self.total
-        ix = int(progress * self.length)
+    def draw_display(self, complete=False):
+        cum_total = '[{} / {}] '.format(byte_unit(self.current_total), self.display_total)
+        line_space = self.line_length - len(cum_total)
 
-        if ix == 0:
-            self.make_bar(ix)
+        if len(self.url) > line_space:
+            trunc_url = self.url[(len(self.url) - line_space) + 5:]
+            text_url = '...' + trunc_url
+        else:
+            text_url = self.url
 
-        elif progress == 1:
-            self.make_bar(self.length)
-            self.print_bar()
-            print()
 
-            if self.msg1:
-                self.print_message(self.msg1)
-            if self.message:
-                print(self.message)
+        url_tot = '{}{}'.format(text_url.ljust(line_space, ' '), cum_total)
+
+        rate_text = self.download_rate()
+        bar_tot = '{}{}'.format(self.bar.ljust(self.line_length - len(rate_text), ' '), rate_text)
+        text = '\r{}{}'.format(url_tot, bar_tot)
+        back = self.line_length * 2
+        # back = len(url_tot) + len(bar_tot)
+        print(text, end='')
+
+        if not complete:
+            print('\b' * back, end='')
+        else:
+            # print('\n\n')
+            print('-'*self.line_length)
+
+
+    def download_rate(self):
+        kb_delta = (self.current_total - self.previous_total) / 1000
+        self.previous_total = self.current_total
+
+        now = time.time()
+        secs_delta = now - self.previous_secs
+        self.previous_secs = now
+        current_rate = kb_delta / secs_delta
+        self.rate.append(current_rate)
+
+        rate_text = '[{:.1f} kbps] '.format(sum(self.rate)/len(self.rate))
+        return rate_text
+
+
+    def update(self, chunk_value):
+        self.current_total += chunk_value
+        if self.total:
+            progress = self.current_total / self.total
+        else:
+            progress = 0
+
+        ix = int(progress * self.bar_length)
+
+        if progress >= 1:
+            ix = self.bar_length
+            self.draw_bar(ix)
+            self.draw_display(complete=True)
 
         elif ix > self.mkcache:
-            self.make_bar(ix)
-            self.print_bar()
             self.mkcache = ix
+            self.draw_bar(ix)
+            self.draw_display()
+
+
 
 # ------------------------------------------------------------------------------
-
 if __name__ == '__main__':
-    n = 120
-    progressbar = Progressbar(n)
-    print('\nProgressbar Test\n')
+    n = 1200
+    progressbar = Progressbar()
+    progressbar.reset(total_bytes=n, url='test_url.com/ddqdwrfewrfewrfelongfoldernamestoexceed800000000000000000000/file.txt')
     i = 0
-    while i < 130:
-        progressbar.update(i)
-        i += 7
+    while i < n:
+        progressbar.update(100)
+        time.sleep(0.2)
+        i += 100

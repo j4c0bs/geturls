@@ -79,6 +79,8 @@ def get_data(file_url):
         return data
 
 
+progressbar = Progressbar()
+
 def download(url, filepath=''):
     response = get_data(url)
 
@@ -86,20 +88,23 @@ def download(url, filepath=''):
         if not filepath:
             filepath = strip_path(url)
 
-        msg = 'Downloading: {}'.format(url)
-        print(msg, end='')
-        print('\r'*len(msg))
-
         if response.getheader('Accept-Ranges') == 'bytes':
             total_bytes = int(response.getheader('Content-Length'))
-            progressbar = Progressbar(total_bytes)
-            nbytes = 0
+            progressbar.reset(url=url, total_bytes=total_bytes)
+            read_bytes = 0
+            # nbytes = 2**13
+            nbytes = 1024
+            # nbytes = 2**16
 
             with open(filepath, 'wb') as f:
-                while nbytes < total_bytes:
-                    f.write(response.read(2**13))
-                    progressbar(2**13)
-                    nbytes += 2**13
+                while read_bytes < total_bytes:
+                    if total_bytes - read_bytes < nbytes:
+                        nbytes = total_bytes - read_bytes
+                    f.write(response.read(nbytes))
+                    progressbar.update(nbytes)
+                    read_bytes += nbytes
+
+            progressbar.finish()
 
         else:
             with open(filepath, 'wb') as f:
@@ -128,6 +133,7 @@ def batch_download_to_temp(urlist, temp_dir):
     failed = []
     dir_groups = group_by_dir(urlist)
     for net_subdir, url_name_list in dir_groups.items():
+        time.sleep(.5)
         temp_subdir = os.path.join(temp_dir, str(hash(net_subdir)))
         os.mkdir(temp_subdir)
         for (url, filename) in url_name_list:
@@ -215,6 +221,7 @@ def main():
 
     if args.log and log_details:
         write_files.to_logfile(args.log.name, log_details)
+
 
 # ------------------------------------------------------------------------------
 if __name__ == '__main__':
