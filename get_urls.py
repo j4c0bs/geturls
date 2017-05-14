@@ -7,9 +7,8 @@ import time
 from dir_tools import confirm_dirs, load_temp_dir, group_by_dir
 from parser import extract_urls
 from pathname import check_name, get_path, get_type, strip_path
-import write_files
-
 from progressbar import Progressbar
+import write_files
 
 progressbar = Progressbar()
 
@@ -56,8 +55,8 @@ def parse_arguments():
     parser.add_argument('--reject', '-r', type=str, nargs='+',
                          help='Skip filetypes entered')
 
-    parser.add_argument('--wait', '-w', type=float,
-                         help='Seconds to wait in between url requests. Defaults to 0.1')
+    parser.add_argument('--wait', '-w', type=float, default=0.0,
+                         help='Seconds to wait in between url requests. Defaults to 0.0')
 
     parser.add_argument('--log', '-l', type=argparse.FileType('a'),
                          help='Write / append to download log file')
@@ -116,19 +115,6 @@ def download(url, filepath=''):
         return False
 
 
-# def download(url, filepath=''):
-#     data = get_data(url)
-#
-#     if data:
-#         if not filepath:
-#             filepath = strip_path(url)
-#         with open(filepath, 'wb') as f:
-#             f.write(data.read())
-#         return True
-#     else:
-#         return False
-
-
 def batch_download_to_temp(urlist, temp_dir, wait=0.1):
     """Downloads all valid URLs to tmp subdirectory and collects details on completed requests.
 
@@ -172,13 +158,16 @@ def save_to_subdirs(urlist, dirsort_type, overwrite, wait):
     return log_details, failed
 
 
-# def display(urlist):
-#     print('input urlist:')
-#     for url in urlist:
-#         print(url)
-
-
 def process_input_files(files):
+    """Parses file containing text for possible URLs.
+
+    Args:
+        files: iterable containing filepaths
+
+    Returns:
+        list of possible URLs
+    """
+
     links = []
     for fn in files:
         with open(fn, 'r') as f:
@@ -190,7 +179,7 @@ def process_input_files(files):
 
     if links:
         if len(files) > 1:
-            links = sorted(set(links), key = lambda url: url[::-1])
+            links = sorted(set(links), key=lambda url: url[::-1])
     else:
         print('No valid URLs located within input files')
 
