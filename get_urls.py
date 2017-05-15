@@ -88,9 +88,6 @@ def download(url, filepath=''):
     response = get_data(url)
 
     if response:
-        if not filepath:
-            filepath = strip_path(url)
-
         if response.getheader('Accept-Ranges') == 'bytes':
             total_bytes = int(response.getheader('Content-Length'))
             progressbar.reset(url=url, total_bytes=total_bytes)
@@ -221,6 +218,4 @@ def main():
 
 # ------------------------------------------------------------------------------
 if __name__ == '__main__':
-    print()
     main()
-    print()
