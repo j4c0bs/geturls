@@ -13,7 +13,7 @@ def byte_unit(n):
     else:
         val = n / 10**3
         unit = 'KB'
-    return '{:.2f} {}'.format(val, unit)
+    return '{:.2f}{}'.format(val, unit)
 
 
 
@@ -29,6 +29,14 @@ class Progressbar(object):
         self.current_total = 0
         self.previous_total = 0
         self.rate = deque([], 5)
+
+
+    def line_separator(self):
+        print('-'*self.line_length)
+
+    def no_byte_headers(self, url):
+        print('Downloading URL without byte headers:')
+        print(url)
 
 
     def set_bar_length(self):
@@ -60,10 +68,10 @@ class Progressbar(object):
 
 
     def draw_display(self, complete=False):
-        cum_total = '[{} / {}] '.format(byte_unit(self.current_total), self.display_total)
+        cum_total = '[{}/{}] '.format(byte_unit(self.current_total), self.display_total)
         line_space = self.line_length - len(cum_total)
 
-        if len(self.url) > line_space:
+        if len(self.url) > line_space + 1:
             trunc_url = self.url[(len(self.url) - line_space) + 5:]
             text_url = '...' + trunc_url
         else:

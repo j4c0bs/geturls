@@ -58,37 +58,34 @@ def parse_arguments():
     parser.add_argument('--wait', '-w', type=float, default=0.0,
                          help='Seconds to wait in between url requests. Defaults to 0.0')
 
+    parser.add_argument('--silent', '-s', action='store_true',
+                         help='Disable all printing to stdout')
+
     parser.add_argument('--log', '-l', type=argparse.FileType('a'),
                          help='Write / append to download log file')
 
     return parser.parse_args()
 
-# ------------------------------------------------------------------------------
-def timestamp():
-    """Timestamp using locale’s appropriate date, time representation
-    Returns: tuple (str, str)
-    """
-
-    return (time.strftime('%x'), time.strftime('%X'))
-
 
 # ------------------------------------------------------------------------------
-def get_data(file_url):
-    data = False
+def get_response(file_url):
+    response = False
     try:
-        data = request.urlopen(file_url)
+        response = request.urlopen(file_url)
     except URLError:
-        data = None
-        print('URLError', file_url)
+        response = False
     finally:
-        return data
+        return response
 
 
 def download(url, filepath=''):
-    response = get_data(url)
+    response = get_response(url)
 
     if response:
-        if response.getheader('Accept-Ranges') == 'bytes':
+        accept_bytes = response.getheader('Accept-Ranges') == 'bytes'
+        content_length = response.getheader('Content-Length')
+
+        if accept_bytes and content_length and all((n.isdigit() for n in content_length)):
             total_bytes = int(response.getheader('Content-Length'))
             progressbar.reset(url=url, total_bytes=total_bytes)
             read_bytes = 0
@@ -103,13 +100,25 @@ def download(url, filepath=''):
                     read_bytes += nbytes
 
         else:
-            print('Downloading:', url)
+            progressbar.no_byte_headers(url)
             with open(filepath, 'wb') as f:
                 f.write(response.read())
 
+            progressbar.line_separator()
+
         return True
+
     else:
         return False
+
+
+def timestamp():
+    """Timestamp using locale’s appropriate date, time representation
+
+    Returns: tuple (str, str)
+    """
+
+    return (time.strftime('%x'), time.strftime('%X'))
 
 
 def batch_download_to_temp(urlist, temp_dir, wait=0.1):
@@ -154,7 +163,7 @@ def save_to_subdirs(urlist, dirsort_type, overwrite, wait):
 
     return log_details, failed
 
-
+# >>> move to parser ---> extract_urls_from_files?
 def process_input_files(files):
     """Parses file containing text for possible URLs.
 
@@ -191,9 +200,6 @@ def main():
     else:
         urlist = extract_urls(args.urls)
 
-    if args.dirprefix != os.getcwd():
-        os.chdir(args.dirprefix)
-
     if args.reject:
         reject_types = ['.' + ft if not ft.startswith('.') else ft for ft in args.reject]
         urlist = [url for url in urlist if all((not url.endswith(ft) for ft in reject_types))]
@@ -202,6 +208,13 @@ def main():
         for url in urlist:
             print(url)
         return
+
+    if args.dirprefix != os.getcwd():
+        os.chdir(args.dirprefix)
+
+    if not args.silent:
+        print()
+        progressbar.line_separator()
 
     sort_options = (args.hostsort, args.namesort, args.typesort)
 
@@ -214,6 +227,20 @@ def main():
 
     if args.log and log_details:
         write_files.to_logfile(args.log.name, log_details)
+
+    if not args.silent:
+        if log_details:
+            print()
+            url_found = len(urlist)
+            url_retrieved = len(log_details)
+            url_failed = len(failed)
+            print('Extracted URLs: {}\nDownloaded: {}\nFailed: {}\n'.format(url_found, url_retrieved, url_failed))
+
+        if failed:
+            print('Failed URLs listed below:')
+            for url in failed:
+                print(url)
+            print()
 
 
 # ------------------------------------------------------------------------------
