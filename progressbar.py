@@ -18,7 +18,8 @@ def byte_unit(n):
 
 
 class Progressbar(object):
-    def __init__(self):
+    def __init__(self, silent):
+        self.silent = silent
         self.line_length = os.get_terminal_size()[0]
         self.total = 0
         self.backspace = 0

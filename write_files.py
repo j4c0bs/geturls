@@ -1,24 +1,10 @@
 import csv
-from itertools import groupby
+# from itertools import groupby
 import os
 from dir_tools import confirm_directory
 from pathname import get_type, get_path, split_name
 # ------------------------------------------------------------------------------
-
-def check_for_duplicates(all_names):
-    duplicates = []
-    all_names.sort(key=get_type)
-    for filetype, names in groupby(all_names, get_type):
-        namelist = list(names)
-        nameset = set(namelist)
-        if len(namelist) != len(nameset):
-            duplicates.extend([name for name in nameset if namelist.count(name) > 1])
-
-    return set(duplicates)
-
-
-# ------------------------------------------------------------------------------
-def to_cwd(completed, temp_root, overwrite):
+def to_cwd(completed, overwrite):
     log_details = []
 
     namecache = set()
@@ -31,12 +17,11 @@ def to_cwd(completed, temp_root, overwrite):
         date, clock = dl_timestamp
         log_details.append((date, clock, url, os.path.abspath(real_path)))
 
-
     return log_details
 
 
 # ------------------------------------------------------------------------------
-def to_filetype_subdirs(completed, temp_root, overwrite):
+def to_filetype_subdirs(completed, overwrite):
     all_paths, urls, all_netdirs, all_names, all_timestamps = list(zip(*completed))
     fn_types = [get_type(fn, subdir=True) for fn in all_names]
     type_subdirs = sorted(set(fn_types))
@@ -58,7 +43,7 @@ def to_filetype_subdirs(completed, temp_root, overwrite):
 
 
 # ------------------------------------------------------------------------------
-def to_host_subdirs(completed, temp_root, overwrite):
+def to_host_subdirs(completed, overwrite):
     all_paths, urls, all_netdirs, all_names, all_timestamps = list(zip(*completed))
     all_netdirs = [path.split('//')[1] if '//' in path else path for path in all_netdirs]
     for subdirtree in set(all_netdirs):

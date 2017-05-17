@@ -46,6 +46,31 @@ def extract_urls(lines):
     return [link for link in links if link]
 
 
+def extract_urls_from_files(files):
+    """Parses file containing text for possible URLs.
+
+    Args:
+        files: iterable containing filepaths
+
+    Returns:
+        list of possible URLs
+    """
+
+    links = []
+    for fn in files:
+        with open(fn, 'r') as f:
+            lines = [line.strip() for line in f if line.strip() != '']
+
+        found_links = extract_urls(lines)
+        if found_links:
+            links.extend(found_links)
+
+    if len(links) > 1:
+        links = sorted(set(links))
+
+    return links
+
+
 # ------------------------------------------------------------------------------
 if __name__ == '__main__':
     lines = ['www.math.wvu.edu/gould/Vol.1.PDF', 'http://www.math.wvu.edu/~gould/Vol.2.PDF', 'http://www.math.wvu.edu/~gould/Vol.3.PDF', 'http://www.math.wvu.edu/~gould/Vol.4.PDF', 'http://www.math.wvu.edu/~gould/Vol.5.PDF', 'http://www.math.wvu.edu/~gould/Vol.6.PDF']
