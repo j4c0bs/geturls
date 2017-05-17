@@ -71,15 +71,14 @@ def to_tmp(urlist, wait, silent):
     """
 
     progressbar = Progressbar(silent)
-    temp_root, temp_dir = load_temp_dir()
+    tmp_dir = load_temp_dir()
 
     completed = []
     failed = []
     dir_groups = group_by_dir(urlist)
 
     for net_subdir, url_name_list in dir_groups.items():
-        temp_subdir = os.path.join(temp_dir, str(hash(net_subdir)))
-        # os.mkdir(temp_subdir)
+        temp_subdir = os.path.join(tmp_dir.name, str(hash(net_subdir)))
         confirm_directory(temp_subdir)
 
         for (url, filename) in url_name_list:
@@ -91,4 +90,4 @@ def to_tmp(urlist, wait, silent):
                 failed.append(url)
             time.sleep(wait)
 
-    return completed, failed, temp_root
+    return completed, failed, tmp_dir

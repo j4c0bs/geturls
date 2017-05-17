@@ -8,18 +8,16 @@ def confirm_directory(subdir):
         os.mkdir(subdir)
 
 
-def validate_dir(user_dir):
+def validate_directory(user_dir):
     user_dir = os.path.abspath(user_dir)
     confirm_directory(user_dir)
     return user_dir
 
 
 def load_temp_dir():
-    temp_root = tempfile.mkdtemp()
     temp_subname = 'GETURLS_TMP_{}'.format(int(time.time()))
-    temp_dir = os.path.join(temp_root, temp_subname)
-    os.mkdir(temp_dir)
-    return temp_root, temp_dir
+    tmp_dir = tempfile.TemporaryDirectory(prefix=temp_subname)
+    return tmp_dir
 
 
 def group_by_dir(urlist):

@@ -2,7 +2,6 @@ from itertools import takewhile
 import os
 import re
 from string import punctuation
-from urllib.parse import unquote as url_unquote
 # ------------------------------------------------------------------------------
 char_escape = str.maketrans({p: '\{}'.format(p) for p in punctuation})
 

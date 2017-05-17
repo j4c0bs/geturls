@@ -1,8 +1,7 @@
 from collections import deque
 import os
 import time
-
-
+# ------------------------------------------------------------------------------
 def byte_unit(n):
     if n // 10**9:
         val = n / 10**9
@@ -14,7 +13,6 @@ def byte_unit(n):
         val = n / 10**3
         unit = 'KB'
     return '{:.2f}{}'.format(val, unit)
-
 
 
 class Progressbar(object):
@@ -30,7 +28,6 @@ class Progressbar(object):
         self.current_total = 0
         self.previous_total = 0
         self.rate = deque([], 5)
-
 
     def line_separator(self):
         print('-'*self.line_length)

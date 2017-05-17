@@ -1,8 +1,8 @@
 import csv
-# from itertools import groupby
 import os
+
 from dir_tools import confirm_directory
-from pathname import get_type, get_path, split_name
+from pathname import get_type, get_path
 # ------------------------------------------------------------------------------
 def to_cwd(completed, overwrite):
     log_details = []

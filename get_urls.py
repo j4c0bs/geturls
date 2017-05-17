@@ -1,19 +1,11 @@
 import argparse
 from itertools import compress
 import os
-# from urllib import request
-# from urllib.error import URLError
-# import time
 
-from dir_tools import load_temp_dir, group_by_dir, validate_dir
+from dir_tools import validate_directory
 import download
 from parser import extract_urls, extract_urls_from_files
-# from pathname import check_name, get_path, get_type, strip_path
-# from progressbar import Progressbar
 import write_files
-
-# progressbar = Progressbar()
-
 # ------------------------------------------------------------------------------
 def parse_arguments():
     parser = argparse.ArgumentParser(prog='get_urls',
@@ -28,7 +20,7 @@ def parse_arguments():
     input_group.add_argument('--urls', '-u', nargs='+', type=str,
                               help="Input text URL(s) to download")
 
-    parser.add_argument('--dirprefix', '-d', type=validate_dir, default=os.getcwd(),
+    parser.add_argument('--dirprefix', '-d', type=validate_directory, default=os.getcwd(),
                          help='Root / parent directory to store all files and subdirectories - defaults to cwd')
 
     subdir_group.add_argument('--hostsort', action='store_true',
@@ -60,100 +52,6 @@ def parse_arguments():
 
 
 # ------------------------------------------------------------------------------
-
-# def get_response(file_url):
-#     response = False
-#     try:
-#         response = request.urlopen(file_url)
-#     except URLError:
-#         response = False
-#     finally:
-#         return response
-#
-#
-# def download(url, filepath=''):
-#     response = get_response(url)
-#
-#     if response:
-#         accept_bytes = response.getheader('Accept-Ranges') == 'bytes'
-#         content_length = response.getheader('Content-Length')
-#
-#         if accept_bytes and content_length and all((n.isdigit() for n in content_length)):
-#             total_bytes = int(response.getheader('Content-Length'))
-#             progressbar.reset(url=url, total_bytes=total_bytes)
-#             read_bytes = 0
-#             nbytes = 1024
-#
-#             with open(filepath, 'wb') as f:
-#                 while read_bytes < total_bytes:
-#                     if total_bytes - read_bytes < nbytes:
-#                         nbytes = total_bytes - read_bytes
-#                     f.write(response.read(nbytes))
-#                     progressbar.update(nbytes)
-#                     read_bytes += nbytes
-#
-#         else:
-#             progressbar.no_byte_headers(url)
-#             with open(filepath, 'wb') as f:
-#                 f.write(response.read())
-#
-#             progressbar.line_separator()
-#
-#         return True
-#
-#     else:
-#         return False
-
-
-# def timestamp():
-#     """Timestamp using locale’s appropriate date, time representation
-#
-#     Returns: tuple (str, str)
-#     """
-#
-#     return (time.strftime('%x'), time.strftime('%X'))
-#
-#
-# def batch_download_to_temp(urlist, temp_dir, wait):
-#     """Downloads all valid URLs to tmp subdirectory and collects details on completed requests.
-#
-#     Returns: lists
-#     """
-#
-#     completed = []
-#     failed = []
-#     dir_groups = group_by_dir(urlist)
-#     for net_subdir, url_name_list in dir_groups.items():
-#         temp_subdir = os.path.join(temp_dir, str(hash(net_subdir)))
-#         os.mkdir(temp_subdir)
-#         for (url, filename) in url_name_list:
-#             temp_path = os.path.join(temp_subdir, filename)
-#             status = download(url, filepath=temp_path)
-#             if status:
-#                 completed.append((temp_path, url, net_subdir, filename, timestamp()))
-#             else:
-#                 failed.append(url)
-#             time.sleep(wait)
-#     return completed, failed
-
-
-# ------------------------------------------------------------------------------
-# def save_to_subdirs(urlist, dirsort_type, overwrite, wait):
-#     # temp_root, temp_dir = load_temp_dir()
-#     completed, failed = batch_download_to_temp(urlist, temp_dir, wait)
-#
-#     if not completed:
-#         return completed, failed
-#
-#     if dirsort_type == 'type':
-#         log_details = write_files.to_filetype_subdirs(completed, overwrite)
-#     elif dirsort_type == 'host':
-#         log_details = write_files.to_host_subdirs(completed, overwrite)
-#     else:
-#         log_details = write_files.to_cwd(completed, overwrite)
-#
-#     return log_details, failed
-
 def save_to_subdirs(completed, dirsort_type, overwrite):
 
     if dirsort_type == 'type':
@@ -181,7 +79,7 @@ def main():
     if args.extract:
         for url in urlist:
             print(url)
-        return
+        return 0
 
     if not args.silent:
         print()
@@ -196,10 +94,7 @@ def main():
     else:
         dirsort_type = ''
 
-    # >>> save to_tmp --> subdirs if any completed
-    # log_details, failed = save_to_subdirs(urlist, dirsort_type, args.overwrite, args.wait)
-
-    completed, failed, temp_root = download.to_tmp(urlist, args.wait, args.silent)
+    completed, failed, tmp_dir = download.to_tmp(urlist, args.wait, args.silent)
 
     if completed:
         log_details = save_to_subdirs(completed, dirsort_type, args.overwrite)
@@ -223,7 +118,9 @@ def main():
                 print(url)
             print()
 
-    # cleanup_tmp(temp_root)
+    tmp_dir.cleanup()
+
+    return 0
 
 
 # ------------------------------------------------------------------------------
