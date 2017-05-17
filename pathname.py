@@ -68,11 +68,11 @@ def check_name(filename, root=os.curdir):
     filepath = os.path.join(root, fn_out)
     return filepath, fn_out
 
-# >>> change to check_path > input path or root + fn
-def url_to_path(url, root=os.curdir):
-    filename = strip_path(url)
-    filepath = os.path.join(root, filename)
-    return filepath, filename
+# >>> delete
+# def url_to_path(url, root=os.curdir):
+#     filename = strip_path(url)
+#     filepath = os.path.join(root, filename)
+#     return filepath, filename
 
 
 def get_path(filename, root=os.curdir, overwrite=False):

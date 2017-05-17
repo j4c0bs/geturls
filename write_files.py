@@ -1,7 +1,7 @@
 import csv
 from itertools import groupby
 import os
-from dir_tools import confirm_dirs
+from dir_tools import confirm_directory
 from pathname import get_type, get_path, split_name
 # ------------------------------------------------------------------------------
 
@@ -40,7 +40,8 @@ def to_filetype_subdirs(completed, temp_root, overwrite):
     all_paths, urls, all_netdirs, all_names, all_timestamps = list(zip(*completed))
     fn_types = [get_type(fn, subdir=True) for fn in all_names]
     type_subdirs = sorted(set(fn_types))
-    confirm_dirs(*type_subdirs)
+    for subdir in type_subdirs:
+        confirm_directory(subdir)
 
     log_details = []
     namecache = set()

@@ -5,7 +5,7 @@ from urllib import request
 from urllib.error import URLError
 import time
 
-from dir_tools import confirm_dirs, load_temp_dir, group_by_dir
+from dir_tools import load_temp_dir, group_by_dir, validate_dir
 from parser import extract_urls
 from pathname import check_name, get_path, get_type, strip_path
 from progressbar import Progressbar
@@ -14,16 +14,6 @@ import write_files
 progressbar = Progressbar()
 
 # ------------------------------------------------------------------------------
-
-def validate_dir(user_dir):
-    user_dir = os.path.abspath(user_dir)
-
-    if not os.path.exists(user_dir):
-        os.mkdir(user_dir)
-
-    return user_dir
-
-
 def parse_arguments():
     parser = argparse.ArgumentParser(prog='get_urls',
                                      description='downloads urls parsed from file(s)')

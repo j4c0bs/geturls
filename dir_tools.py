@@ -3,10 +3,24 @@ import tempfile
 import time
 from urllib.parse import unquote as url_unquote
 # ------------------------------------------------------------------------------
+def confirm_directory(subdir):
+    if not os.path.exists(subdir):
+        os.mkdir(subdir)
+
+
+def validate_dir(user_dir):
+    user_dir = os.path.abspath(user_dir)
+    confirm_directory(user_dir)
+    # if not os.path.exists(user_dir):
+    #     os.mkdir(user_dir)
+    return user_dir
+
+
 def confirm_dirs(*subdirs):
     for subdir in subdirs:
-        if not os.path.exists(subdir):
-            os.mkdir(subdir)
+        # if not os.path.exists(subdir):
+        #     os.mkdir(subdir)
+        confirm_directory(subdir)
 
 
 def load_temp_dir():
