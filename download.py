@@ -18,6 +18,7 @@ def get_response(file_url):
 
 def download(url, filepath, progressbar):
     response = get_response(url)
+    end = 0
 
     if response:
         accept_bytes = response.getheader('Accept-Ranges') == 'bytes'
@@ -28,18 +29,36 @@ def download(url, filepath, progressbar):
             progressbar.reset(url=url, total_bytes=total_bytes)
             read_bytes = 0
             nbytes = 1024
+            loop_count = 1
+            checkpoint = 32
+
+            start = time.time()
 
             with open(filepath, 'wb') as f:
                 while read_bytes < total_bytes:
+
+                    if loop_count % checkpoint == 0:
+                        chunk_factor = progressbar.download_rate / nbytes
+                        if chunk_factor < 0.33:
+                            nbytes //= 2
+                        elif chunk_factor > 2:
+                            nbytes *= 2
+                        elif chunk_factor == 0:
+                            progressbar.timeout()
+                            break
+
                     if total_bytes - read_bytes < nbytes:
                         nbytes = total_bytes - read_bytes
                     f.write(response.read(nbytes))
                     progressbar.update(nbytes)
                     read_bytes += nbytes
 
+                    loop_count += 1
+
             if os.path.getsize(filepath) != total_bytes:
-                print('total_bytes not equal:', filepath)
-                return False
+                return False, (0,0)
+
+            end = time.time() - start
 
         else:
             progressbar.no_byte_headers(url)
@@ -48,10 +67,10 @@ def download(url, filepath, progressbar):
 
             progressbar.line_separator()
 
-        return True
+        return True, (end, loop_count)
 
     else:
-        return False
+        return False, (0,0)
 
 
 # ------------------------------------------------------------------------------
@@ -69,7 +88,9 @@ def to_tmp(urlist, wait, silent):
 
     Returns: lists
     """
-
+    secs = 0
+    loops = 0
+    tot_loops = []
     progressbar = Progressbar(silent)
     tmp_dir = load_temp_dir()
 
@@ -83,11 +104,19 @@ def to_tmp(urlist, wait, silent):
 
         for (url, filename) in url_name_list:
             temp_path = os.path.join(temp_subdir, filename)
-            status = download(url, temp_path, progressbar)
+            status, (end, loop_count) = download(url, temp_path, progressbar)
+            secs += end
+            loops += loop_count
+            tot_loops.append(loop_count)
+
             if status:
                 completed.append((temp_path, url, net_subdir, filename, timestamp()))
             else:
                 failed.append(url)
             time.sleep(wait)
+
+    print('\nLoops per second: {:.2f}'.format(loops/secs))
+    print('Average time per download - dynamic chunk: {:.4f} sec'.format(secs / len(completed)))
+    print('tot_loops:', tot_loops)
 
     return completed, failed, tmp_dir

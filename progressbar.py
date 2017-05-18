@@ -1,12 +1,13 @@
 from collections import deque
 import os
 import time
+from time import time as timestamp
 # ------------------------------------------------------------------------------
 def byte_unit(n):
-    if n // 10**9:
+    if n >= 10**9:
         val = n / 10**9
         unit = 'GB'
-    elif n // 10**6:
+    elif n >= 10**6:
         val = n / 10**6
         unit = 'MB'
     else:
@@ -27,7 +28,8 @@ class Progressbar(object):
         self.mkcache = 0
         self.current_total = 0
         self.previous_total = 0
-        self.rate = deque([], 5)
+        self.bytes_tracker = []
+        self.seconds_tracker = []
 
     def line_separator(self):
         print('-'*self.line_length)
@@ -36,7 +38,6 @@ class Progressbar(object):
         print('Downloading URL without byte headers:')
         print(url)
 
-
     def set_bar_length(self):
         self.line_length = os.get_terminal_size()[0]
         if self.line_length < 50:
@@ -44,13 +45,15 @@ class Progressbar(object):
         else:
             self.bar_length = self.line_length - 40
 
-
     def set_total(self, n):
         self.total = n
         self.display_total = byte_unit(n)
         self.mkcache = 0
+        self.previous_total = 0
         self.current_total = 0
-        self.previous_secs = time.time()
+        self.previous_time = timestamp()
+        self.bytes_tracker = []
+        self.seconds_tracker = []
 
 
     def reset(self, total_bytes=0, url=''):
@@ -58,12 +61,14 @@ class Progressbar(object):
         self.set_total(total_bytes)
         self.url = url
 
+    def timeout(self):
+        print('\b' * self.line_length, end='')
+        print('CONNECTION TIMEOUT'.center(self.line_length, '-'))
 
     def draw_bar(self, ix=0):
         a = '['
         marks = '#' * ix
         self.bar = a + marks.ljust(self.bar_length, '-') + '] '
-
 
     def draw_display(self, complete=False):
         cum_total = '[{}/{}] '.format(byte_unit(self.current_total), self.display_total)
@@ -76,8 +81,7 @@ class Progressbar(object):
             text_url = self.url
 
         url_tot = '{}{}'.format(text_url.ljust(line_space, ' '), cum_total)
-
-        rate_text = self.download_rate()
+        rate_text = '[{}ps] '.format(byte_unit(self.download_rate))
         bar_tot = '{}{}'.format(self.bar.ljust(self.line_length - len(rate_text), ' '), rate_text)
         text = '\r{}{}'.format(url_tot, bar_tot)
         back = self.line_length * 2
@@ -90,20 +94,19 @@ class Progressbar(object):
             print('-'*self.line_length)
 
 
-    def download_rate(self):
-        kb_delta = (self.current_total - self.previous_total) / 1000
-        self.previous_total = self.current_total
-        now = time.time()
-        secs_delta = now - self.previous_secs
-        self.previous_secs = now
-        current_rate = kb_delta / secs_delta
-        self.rate.append(current_rate)
-        rate_text = '[{:.1f} kbps] '.format(sum(self.rate)/len(self.rate))
-        return rate_text
+    def calculate_download_rate(self, bytes_delta):
+        secs_delta = self.current_time - self.previous_time
+        self.previous_time = self.current_time
+        self.bytes_tracker.append(bytes_delta)
+        self.seconds_tracker.append(secs_delta)
+        self.download_rate = sum(self.bytes_tracker) / sum(self.seconds_tracker)
 
 
     def update(self, chunk_value):
+        self.current_time = timestamp()
         self.current_total += chunk_value
+        self.calculate_download_rate(chunk_value)
+
         if self.total:
             progress = self.current_total / self.total
         else:

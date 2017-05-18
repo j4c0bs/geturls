@@ -39,8 +39,8 @@ def parse_arguments():
     parser.add_argument('--reject', '-r', type=str, nargs='+',
                          help='Skip filetypes entered')
 
-    parser.add_argument('--wait', '-w', type=float, default=0.0,
-                         help='Seconds to wait in between url requests. Defaults to 0.0')
+    parser.add_argument('--wait', '-w', type=float, default=0.01,
+                         help='Seconds to wait in between url requests. Defaults to 0.01')
 
     parser.add_argument('--silent', '-s', action='store_true',
                          help='Disable all printing to stdout')
