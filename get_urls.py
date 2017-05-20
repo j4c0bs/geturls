@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import argparse
 from itertools import compress
 import os
@@ -9,7 +11,7 @@ import write_files
 # ------------------------------------------------------------------------------
 def parse_arguments():
     parser = argparse.ArgumentParser(prog='get_urls',
-                                     description='downloads urls parsed from file(s)')
+                                     description='downloads and sorts urls parsed from file(s)')
 
     input_group = parser.add_mutually_exclusive_group(required=True)
     subdir_group = parser.add_mutually_exclusive_group()
@@ -41,6 +43,9 @@ def parse_arguments():
 
     parser.add_argument('--wait', '-w', type=float, default=0.01,
                          help='Seconds to wait in between url requests. Defaults to 0.01')
+
+    parser.add_argument('--quiet', '-q', action='store_true',
+                         help='Minimal status display to stdout')
 
     parser.add_argument('--silent', '-s', action='store_true',
                          help='Disable all printing to stdout')
@@ -81,8 +86,8 @@ def main():
             print(url)
         return 0
 
-    if not args.silent:
-        print()
+    # if not args.silent:
+    #     print()
 
     if args.dirprefix != os.getcwd():
         os.chdir(args.dirprefix)
@@ -94,7 +99,7 @@ def main():
     else:
         dirsort_type = ''
 
-    completed, failed, tmp_dir = download.to_tmp(urlist, args.wait, args.silent)
+    completed, failed, tmp_dir = download.to_tmp(urlist, args.wait, args.quiet, args.silent)
 
     if completed:
         log_details = save_to_subdirs(completed, dirsort_type, args.overwrite)
@@ -106,20 +111,19 @@ def main():
 
     if not args.silent:
         if log_details:
-            print()
             url_found = len(urlist)
             url_retrieved = len(log_details)
             url_failed = len(failed)
-            print('Extracted URLs: {}\nDownloaded: {}\nFailed: {}\n'.format(url_found, url_retrieved, url_failed))
+            w = os.get_terminal_size()[0]
+            print(' URLs: {} - Completed: {} - Failed: {} '.format(url_found, url_retrieved, url_failed).center(w, '-'))
 
-        if failed:
-            print('Failed URLs listed below:')
+        if failed and not args.quiet:
+            print('Failed URLs:')
             for url in failed:
                 print(url)
             print()
 
     tmp_dir.cleanup()
-
     return 0
 
 

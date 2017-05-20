@@ -6,33 +6,40 @@ from urllib.error import URLError
 from dir_tools import load_temp_dir, group_by_dir, confirm_directory
 from progressbar import Progressbar
 # ------------------------------------------------------------------------------
-def get_response(file_url):
+def get_response(url):
     response = False
     try:
-        response = request.urlopen(file_url)
+        response = request.urlopen(url)
     except URLError:
         response = False
     finally:
         return response
 
 
-def download(url, filepath, progressbar):
+def silent_download(url, filepath, *ignore):
     response = get_response(url)
-    end = 0
+    if response:
+        with open(filepath, 'wb') as f:
+            f.write(response.read())
+        return True
+    else:
+        return False
+
+
+def verbose_download(url, filepath, progressbar):
+    response = get_response(url)
 
     if response:
         accept_bytes = response.getheader('Accept-Ranges') == 'bytes'
         content_length = response.getheader('Content-Length')
 
         if accept_bytes and content_length and all((n.isdigit() for n in content_length)):
-            total_bytes = int(response.getheader('Content-Length'))
+            total_bytes = int(content_length)
             progressbar.reset(url=url, total_bytes=total_bytes)
             read_bytes = 0
             nbytes = 1024
             loop_count = 1
             checkpoint = 32
-
-            start = time.time()
 
             with open(filepath, 'wb') as f:
                 while read_bytes < total_bytes:
@@ -49,16 +56,14 @@ def download(url, filepath, progressbar):
 
                     if total_bytes - read_bytes < nbytes:
                         nbytes = total_bytes - read_bytes
+
                     f.write(response.read(nbytes))
                     progressbar.update(nbytes)
                     read_bytes += nbytes
-
                     loop_count += 1
 
             if os.path.getsize(filepath) != total_bytes:
-                return False, (0,0)
-
-            end = time.time() - start
+                return False
 
         else:
             progressbar.no_byte_headers(url)
@@ -67,10 +72,10 @@ def download(url, filepath, progressbar):
 
             progressbar.line_separator()
 
-        return True, (end, loop_count)
+        return True
 
     else:
-        return False, (0,0)
+        return False
 
 
 # ------------------------------------------------------------------------------
@@ -83,20 +88,24 @@ def timestamp():
     return (time.strftime('%x'), time.strftime('%X'))
 
 
-def to_tmp(urlist, wait, silent):
+def to_tmp(urlist, wait, quiet, silent):
     """Downloads all valid URLs to tmp subdirectory and collects details on completed requests.
 
     Returns: lists
     """
-    secs = 0
-    loops = 0
-    tot_loops = []
-    progressbar = Progressbar(silent)
+
     tmp_dir = load_temp_dir()
 
     completed = []
     failed = []
     dir_groups = group_by_dir(urlist)
+
+    if silent:
+        download = silent_download
+        progressbar = None
+    else:
+        download = verbose_download
+        progressbar = Progressbar(quiet)
 
     for net_subdir, url_name_list in dir_groups.items():
         temp_subdir = os.path.join(tmp_dir.name, str(hash(net_subdir)))
@@ -104,10 +113,7 @@ def to_tmp(urlist, wait, silent):
 
         for (url, filename) in url_name_list:
             temp_path = os.path.join(temp_subdir, filename)
-            status, (end, loop_count) = download(url, temp_path, progressbar)
-            secs += end
-            loops += loop_count
-            tot_loops.append(loop_count)
+            status = download(url, temp_path, progressbar)
 
             if status:
                 completed.append((temp_path, url, net_subdir, filename, timestamp()))
@@ -115,8 +121,7 @@ def to_tmp(urlist, wait, silent):
                 failed.append(url)
             time.sleep(wait)
 
-    print('\nLoops per second: {:.2f}'.format(loops/secs))
-    print('Average time per download - dynamic chunk: {:.4f} sec'.format(secs / len(completed)))
-    print('tot_loops:', tot_loops)
+    if quiet and progressbar:
+        progressbar.cleanup()
 
     return completed, failed, tmp_dir
