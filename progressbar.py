@@ -5,6 +5,19 @@ import os
 import time
 from time import time as timestamp
 # ------------------------------------------------------------------------------
+def time_unit(sec):
+    if sec >= 3600:
+        val = sec / 3600
+        unit = 'hrs'
+    elif sec >= 60:
+        val = sec / 60
+        unit = 'min'
+    else:
+        val = sec
+        unit = 'sec'
+    return '{:.2f}{}'.format(val, unit)
+
+
 def byte_unit(n, pad=False):
     if n >= 10**9:
         val = n / 10**9
@@ -21,29 +34,71 @@ def byte_unit(n, pad=False):
         return '{:.2f}{}'.format(val, unit)
 
 
-# def average(iterable):
-#     return sum(iterable) / len(iterable)
-
-
+# ------------------------------------------------------------------------------
 class Progressbar(object):
-    def __init__(self, quiet):
-        self._set_update_func(quiet)
-        self.quiet = quiet
-        self.line_length = os.get_terminal_size()[0]
-        self._set_bar_length()
-        self._url = ''
-        self._complete_switch = False
-        self.total = 0
-        self.mkcache = 0
-        self.current_total = 0
-        self.previous_total = 0
-        self.bytes_tracker = []
-        self.seconds_tracker = []
-        self.bytes_tracker = deque([], 256)
-        self.seconds_tracker = deque([], 256)
+    """A class for graphically displaying the progress of a url download.
 
+    Standard display:
+    ----------------------------------------------------------------------------
+    (2/5) ...://test-url-dot-com/folder_002/file_02.txt        6.90MB : 1.77sec
+    [#########################################################]        3.60MBps
+    ----------------------------------------------------------------------------
+    (3/5) ...//test-url-dot-com/folder_0003/file_03.txt       [  5.41MB/7.90MB]
+    [#############################################------------]        3.25MBps
+    ----------------------------------------------------------------------------
+
+    Quiet display:
+    (3/12) ...st-url-dot-com/folder_0000000009/file_09.txt    [123.45KB/6.78MB]
+
+    Attributes:
+        cur_fileno: int
+        nfiles: int
+        url: str
+        start_time: float
+
+    Methods:
+        line_separator: prints line of hyphens the full width of the terminal screen
+        no_byte_headers: basic text display for urls without content-length or
+            accept-ranges headers
+        reset: entry point for starting download of new url
+        cleanup: returns terminal cursor position back to start of screen line
+        timeout: returns cursor and prints status
+        update: callback for receiving bytes
+    """
+
+    def __init__(self, quiet=False, nfiles=1):
+        """Instantiate a Progressbar.
+
+        Args:
+            quiet: bool - enable quiet mode
+            nfiles: int - total number of sequential files / urls
+        """
+
+        self.cur_fileno = 0
+        self.nfiles = nfiles
+        self._tot_fileno = str(nfiles)
+        self._set_update_func(quiet)
+        self._line_length = os.get_terminal_size()[0]
+        self._set_bar_length()
+        self.url = ''
+        self.start_time = 0
+        self._bytes_tracker = deque([], 256)
+        self._seconds_tracker = deque([], 256)
+        self._reset_relative_params()
         if not quiet:
-            print('{:>{n}}'.format(time.ctime(), n=self.line_length - 1))
+            print('{:>{n}}'.format(time.ctime(), n=self._line_length - 1))
+            self.line_separator()
+
+
+    def line_separator(self):
+        print('-'*self._line_length)
+
+
+    def no_byte_headers(self, url):
+        self.reset(url=url)
+        print('Downloading URL without byte headers:')
+        print(url)
+
 
     def _set_update_func(self, quiet):
         if quiet:
@@ -51,114 +106,168 @@ class Progressbar(object):
         else:
             self.update = self._bar_update
 
-    def line_separator(self):
-        print('-'*self.line_length)
 
-    def no_byte_headers(self, url):
-        print('Downloading URL without byte headers:')
-        print(url)
+    def _reset_relative_params(self):
+        self._complete_switch = False
+        self._mkcache = 0
+        self._current_total = 0
+        self._previous_time = timestamp()
 
-    def set_total(self, n):
-        self.total = n
-        self.display_total = byte_unit(n)
-        self.mkcache = 0
-        self.previous_total = 0
-        self.current_total = 0
-        self.previous_time = timestamp()
-        self.bytes_tracker.clear()
-        self.seconds_tracker.clear()
 
     def reset(self, total_bytes=0, url=''):
+        # """Prepares for downloading new url.
+        #
+        # Args:
+        #     total_bytes: int - size of incoming file in bytes
+        #     url: str - to be displayed in terminal
+        #
+        # """
+
+        self.url = url
+        self.cur_fileno += 1
+        self._bytes_total = total_bytes
+        self._display_total = byte_unit(total_bytes)
         self._set_bar_length()
-        self.set_total(total_bytes)
-        self._url = url
-        self._complete_switch = False
+        self._reset_relative_params()
+        self._bytes_tracker.clear()
+        self._seconds_tracker.clear()
+        self.start_time = timestamp()
+
 
     def cleanup(self):
-        print('\b' * self.line_length, end='')
-        # print('-' * self.line_length)
+        print('\b' * self._line_length, end='')
+
 
     def timeout(self):
-        print('\b' * self.line_length, end='')
-        print('CONNECTION TIMEOUT'.center(self.line_length, '-'))
+        print('\b' * self._line_length, end='')
+        print('CONNECTION TIMEOUT'.center(self._line_length, '-'))
+
 
     def _truncate_url(self, line_space):
-        # if len(self._url) > line_space - 1:
-        if len(self._url) >= line_space:
-            trunc_url = self._url[(len(self._url) - line_space) + 5:]
+        """Edits URL to fit line space.
+
+        Args:
+            - line_space: int - char space remaining to include running total
+
+        Returns:
+            - text_url: str - url to be displayed
+        """
+
+        if len(self.url) >= line_space:
+            trunc_url = self.url[(len(self.url) - line_space) + 5:]
             text_url = '...' + trunc_url
         else:
-            text_url = self._url
+            text_url = self.url
         return text_url
 
-    def _running_total(self):
-        cur_bytes_total = '[{}/{}] '.format(byte_unit(self.current_total, pad=True), self.display_total)
-        line_space = self.line_length - len(cur_bytes_total)
-        # text_url = self._truncate_url(line_space)
-        text_url = self._truncate_url(self.line_length - 25)
-        # url_bytes_total = '{}{}'.format(text_url.ljust(line_space, ' '), cur_bytes_total)
-        url_bytes_total = '{:<{line_space}}{}'.format(text_url, cur_bytes_total, line_space=line_space)
+
+    def _running_total(self, complete=False):
+        """Constructs url and cumulative total for display.
+        Example: https://test-url-dot-com/dir/file  [123.45KB/67.89MB]
+        Returns:
+            - url_bytes_total: str
+        """
+
+        fileno_status = '({}/{}) '.format(self.cur_fileno, self._tot_fileno)
+
+        if not complete:
+            cur_bytes = '[{}/{}] '.format(byte_unit(self._current_total, pad=True), self._display_total)
+        else:
+            tot_sec = timestamp() - self.start_time
+            cur_bytes = '{} : {} '.format(self._display_total, time_unit(tot_sec))
+
+        line_space = self._line_length - len(cur_bytes) - len(fileno_status)
+        text_url = self._truncate_url(self._line_length - 29)
+        url_bytes_total = '{}{:<{line_space}}{}'.format(fileno_status, text_url, cur_bytes, line_space=line_space)
         return url_bytes_total
 
 
     def _set_bar_length(self):
-        """4 space char pad bar and rate text == 17 char total
-           rate text --> 12 + 1 char max
+        """Calculates total length for progress bar based on max size of rate text.
+        Rate text is 17 char total - 13 char max + 4 space char pad
         """
 
-        self.line_length = os.get_terminal_size()[0]
-        self.bar_length = self.line_length - 17
+        self._line_length = os.get_terminal_size()[0]
+        self.bar_length = self._line_length - 19
+
 
     def _draw_bar(self, ix=0):
         """Creates str progress bar.
-           [#########--------]
-           Shares line space with rate text. e.g. [123.45KBps]
+        Example: [#########--------]
+        Arg:
+            ix: int - updated progress index for next # character
         """
 
-        a = '['
         marks = '#' * ix
-        self.bar = a + marks.ljust(self.bar_length, '-') + '] '
+        self.bar = '[{:-<{bar_tot_len}}] '.format(marks, bar_tot_len=self.bar_length)
+
 
     def _draw_display(self, ix, complete=False):
-        self._draw_bar(ix)
-        url_bytes_total = self._running_total()
-        rate_text = '[{}ps] '.format(byte_unit(self.download_rate, pad=True))
-        # bar_total = '{}{}'.format(self.bar.ljust(self.line_length - len(rate_text), ' '), rate_text)
+        """Creates text for 2 line progress display.
+        Args:
+            - ix: int
+            - complete: bool - Triggers printing single line without backspace.
+                Erases current progress bar from display.
+        """
 
-        bar_total = '{:<{bar_space}}{}'.format(self.bar, rate_text, bar_space=self.line_length - len(rate_text))
-        text = '\r{}{}'.format(url_bytes_total, bar_total)
-        back = self.line_length * 2
+        self._draw_bar(ix)
+        url_bytes_total = self._running_total(complete=complete)
+
+        rate_text = '{}ps '.format(byte_unit(self.download_rate, pad=True))
+        bar_space = self._line_length - len(rate_text)
+        bar_total = '{:<{bar_space}}{}'.format(self.bar, rate_text, bar_space=bar_space)
+        text = '\r{:<{s}}{:<{s}}'.format(url_bytes_total, bar_total, s=self._line_length)
+        back = self._line_length * 2
+
         print(text, end='')
 
         if not complete or self._complete_switch:
             print('\b' * back, end='')
         else:
-            print('\b' * self.line_length, end='')
-            print('-'*self.line_length)
+            # erases last line with progressbar and enables new url to print over
+            # print('\b' * (self._line_length - 1), end='')
+            print('-'*self._line_length)
+
 
     def _calculate_download_rate(self, bytes_delta):
-        secs_delta = self.current_time - self.previous_time
-        self.previous_time = self.current_time
+        """Updates rate for each chunk added as bytes/second."""
 
-        self.bytes_tracker.append(bytes_delta)
-        self.seconds_tracker.append(secs_delta)
-        self.download_rate = sum(self.bytes_tracker) / sum(self.seconds_tracker)
+        secs_delta = self.current_time - self._previous_time
+        self._previous_time = self.current_time
+        self._bytes_tracker.append(bytes_delta)
+        self._seconds_tracker.append(secs_delta)
+        self.download_rate = sum(self._bytes_tracker) / sum(self._seconds_tracker)
+
 
     def _update_total(self, chunk_value):
         self.current_time = timestamp()
-        self.current_total += chunk_value
+        self._current_total += chunk_value
         self._calculate_download_rate(chunk_value)
 
+
     def _text_update(self, chunk_value):
+        """Quiet display - url and cumulative total only.
+
+        Arg:
+            chunk_value: int - incoming bytes
+        """
+
         self._update_total(chunk_value)
         url_bytes_total = self._running_total()
         text = '\r{}'.format(url_bytes_total)
         print(text, end='')
 
+
     def _bar_update(self, chunk_value):
+        """Standard 2 line display.
+
+        Arg:
+            chunk_value: int - incoming bytes
+        """
+
         self._update_total(chunk_value)
-        if self.total:
-            progress = self.current_total / self.total
+        if self._bytes_total:
+            progress = self._current_total / self._bytes_total
         else:
             progress = 0
 
@@ -166,26 +275,25 @@ class Progressbar(object):
 
         if progress >= 1:
             ix = self.bar_length
-            # if not self._complete_switch:
             self._draw_display(ix, complete=True)
             self._complete_switch = True
-        elif ix > self.mkcache:
-            self.mkcache = ix
+        elif ix > self._mkcache:
+            self._mkcache = ix
             self._draw_display(ix)
 
 
 # ------------------------------------------------------------------------------
-def fake_download(nfiles=1, KBps=5000, quiet=False):
+def simulate_download(nfiles=1, KBps=5000, quiet=False):
     fake_url = lambda i: 'https://test-url-dot-com/folder_{}/file_{}.txt'.format(str(i).zfill(i+1), str(i).zfill(2))
     filesize = lambda i: (i + 4.9) * 10**6
-    progressbar = Progressbar(quiet)
+    progressbar = Progressbar(quiet=quiet, nfiles=nfiles)
     # chunk_loops = []
 
     def fake_rate(time_deltas):
         loops_per_sec = 1 / (sum(time_deltas) / len(time_deltas))
         return round((KBps * 1000) / loops_per_sec)
 
-    for i in range(nfiles):
+    for i in range(1, nfiles+1):
         total_bytes = filesize(i)
         progressbar.reset(total_bytes=total_bytes, url=fake_url(i))
         chunk = 1024
@@ -212,7 +320,7 @@ def fake_download(nfiles=1, KBps=5000, quiet=False):
     if quiet:
         progressbar.cleanup()
 
-    print(' URLs: {} - Completed: {} - Failed: {} '.format(nfiles, nfiles, 0).center(progressbar.line_length, '-'))
+    print(' URLs: {} - Completed: {} - Failed: {} '.format(nfiles, nfiles, 0).center(os.get_terminal_size()[0], '-'))
     print()
     # for (cx, x) in chunk_loops:
     #     print('loops_per_sec: {}  ||  faked download rate: {}'.format(x, byte_unit(cx * x)))
@@ -234,9 +342,10 @@ def parse_arguments():
     return parser.parse_args()
 
 
+# ------------------------------------------------------------------------------
 if __name__ == '__main__':
     import argparse
     args = parse_arguments()
 
     print('Progressbar simulated file download:\n')
-    fake_download(nfiles=args.nfiles, KBps=args.rate, quiet=args.quiet)
+    simulate_download(nfiles=args.nfiles, KBps=args.rate, quiet=args.quiet)

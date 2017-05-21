@@ -91,7 +91,16 @@ def timestamp():
 def to_tmp(urlist, wait, quiet, silent):
     """Downloads all valid URLs to tmp subdirectory and collects details on completed requests.
 
-    Returns: lists
+    Args:
+        - urlist: list of (url, filename)
+        - wait: float - time in seconds to delay requests
+        - quiet: bool - enables optional progressbar display
+        - silent: bool - disables progressbar / any printing to stdout
+
+    Returns:
+        - completed
+        - failed
+        - tmp_dir
     """
 
     tmp_dir = load_temp_dir()
@@ -105,7 +114,7 @@ def to_tmp(urlist, wait, quiet, silent):
         progressbar = None
     else:
         download = verbose_download
-        progressbar = Progressbar(quiet)
+        progressbar = Progressbar(quiet=quiet, nfiles=len(urlist))
 
     for net_subdir, url_name_list in dir_groups.items():
         temp_subdir = os.path.join(tmp_dir.name, str(hash(net_subdir)))
