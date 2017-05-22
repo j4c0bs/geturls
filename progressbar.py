@@ -38,7 +38,15 @@ def byte_unit(n, pad=False):
 class Progressbar(object):
     """A class for graphically displaying the progress of a url download.
 
-    Standard display:
+    ----------------------------------------------------------------------------
+    ----------------------------- DISPLAY EXAMPLES -----------------------------
+    ----------------------------------------------------------------------------
+
+    --> Standard display:
+
+    ----------------------------------------------------------------------------
+    (1/5) https://test-url-dot-com/folder_01/file_01.txt       5.90MB : 1.50sec
+    [#########################################################]        3.82MBps
     ----------------------------------------------------------------------------
     (2/5) ...://test-url-dot-com/folder_002/file_02.txt        6.90MB : 1.77sec
     [#########################################################]        3.60MBps
@@ -47,23 +55,36 @@ class Progressbar(object):
     [#############################################------------]        3.25MBps
     ----------------------------------------------------------------------------
 
-    Quiet display:
+    --> Quiet display:
+
     (3/12) ...st-url-dot-com/folder_0000000009/file_09.txt    [123.45KB/6.78MB]
 
+    ----------------------------------------------------------------------------
+    ----------------------------------------------------------------------------
+
     Attributes:
-        cur_fileno: int
-        nfiles: int
-        url: str
-        start_time: float
+        - current_fileno: int
+            - cumulative total of urls requested
+        - nfiles: int
+            - total number of urls
+        - url: str
+            - currently requested url
+        - start_time: float
+            - timestamp in seconds at start of current url request
 
     Methods:
-        line_separator: prints line of hyphens the full width of the terminal screen
-        no_byte_headers: basic text display for urls without content-length or
-            accept-ranges headers
-        reset: entry point for starting download of new url
-        cleanup: returns terminal cursor position back to start of screen line
-        timeout: returns cursor and prints status
-        update: callback for receiving bytes
+        - line_separator
+            Prints line of hyphens the full width of the terminal screen
+        - no_byte_headers
+            Text display for urls without content-length or accept-ranges headers
+        - reset
+            Entry point for starting download of new url
+        - cleanup
+            Returns terminal cursor position back to start of screen line
+        - timeout
+            Returns cursor and prints status
+        - update
+            Callback for receiving bytes
     """
 
     def __init__(self, quiet=False, nfiles=1):
@@ -74,7 +95,8 @@ class Progressbar(object):
             nfiles: int - total number of sequential files / urls
         """
 
-        self.cur_fileno = 0
+        self._quiet = quiet
+        self.current_fileno = 0
         self.nfiles = nfiles
         self._tot_fileno = str(nfiles)
         self._set_update_func(quiet)
@@ -95,9 +117,18 @@ class Progressbar(object):
 
 
     def no_byte_headers(self, url):
+        """Display text for URL without valid Accept-Ranges or Content-Length."""
+
         self.reset(url=url)
-        print('Downloading URL without byte headers:')
-        print(url)
+        fileno_status = '({}/{}) '.format(self.current_fileno, self._tot_fileno)
+        notice = '{}Missing byte headers - progress NA: '.format(fileno_status)
+        line_space = self._line_length - len(notice)
+        text_url = self._truncate_url(line_space)
+        header_notice = '{}{}'.format(notice, text_url)
+        text = '\r{:<{w}}'.format(header_notice, w=self._line_length)
+        print(text, end='')
+        if not self._quiet:
+            self.line_separator()
 
 
     def _set_update_func(self, quiet):
@@ -120,11 +151,10 @@ class Progressbar(object):
         # Args:
         #     total_bytes: int - size of incoming file in bytes
         #     url: str - to be displayed in terminal
-        #
         # """
 
         self.url = url
-        self.cur_fileno += 1
+        self.current_fileno += 1
         self._bytes_total = total_bytes
         self._display_total = byte_unit(total_bytes)
         self._set_bar_length()
@@ -168,7 +198,7 @@ class Progressbar(object):
             - url_bytes_total: str
         """
 
-        fileno_status = '({}/{}) '.format(self.cur_fileno, self._tot_fileno)
+        fileno_status = '({}/{}) '.format(self.current_fileno, self._tot_fileno)
 
         if not complete:
             cur_bytes = '[{}/{}] '.format(byte_unit(self._current_total, pad=True), self._display_total)
@@ -287,13 +317,18 @@ def simulate_download(nfiles=1, KBps=5000, quiet=False):
     fake_url = lambda i: 'https://test-url-dot-com/folder_{}/file_{}.txt'.format(str(i).zfill(i+1), str(i).zfill(2))
     filesize = lambda i: (i + 4.9) * 10**6
     progressbar = Progressbar(quiet=quiet, nfiles=nfiles)
-    # chunk_loops = []
 
     def fake_rate(time_deltas):
         loops_per_sec = 1 / (sum(time_deltas) / len(time_deltas))
         return round((KBps * 1000) / loops_per_sec)
 
     for i in range(1, nfiles+1):
+
+        if i == 3:
+            progressbar.no_byte_headers(url=fake_url(i))
+            time.sleep(2)
+            continue
+
         total_bytes = filesize(i)
         progressbar.reset(total_bytes=total_bytes, url=fake_url(i))
         chunk = 1024
@@ -315,17 +350,15 @@ def simulate_download(nfiles=1, KBps=5000, quiet=False):
             last_time = now
             loop_count += 1
 
-        # chunk_loops.append((chunk, round(1 / (sum(time_deltas) / len(time_deltas)))))
-
     if quiet:
         progressbar.cleanup()
 
-    print(' URLs: {} - Completed: {} - Failed: {} '.format(nfiles, nfiles, 0).center(os.get_terminal_size()[0], '-'))
+    w = os.get_terminal_size()[0]
+    print(' URLs: {} - Completed: {} - Failed: {} '.format(nfiles, nfiles, 0).center(w, '-'))
     print()
-    # for (cx, x) in chunk_loops:
-    #     print('loops_per_sec: {}  ||  faked download rate: {}'.format(x, byte_unit(cx * x)))
 
 
+# ------------------------------------------------------------------------------
 def parse_arguments():
     parser = argparse.ArgumentParser(prog='progressbar - test',
                                      description='test display of progressbar')

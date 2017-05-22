@@ -98,9 +98,14 @@ def to_tmp(urlist, wait, quiet, silent):
         - silent: bool - disables progressbar / any printing to stdout
 
     Returns:
-        - completed
-        - failed
-        - tmp_dir
+        - completed: list of tuples containing:
+            - temp_path: str - temporary filepath of retrieved url
+            - url: str - requested url
+            - net_subdir: str - url directory path without filename
+            - filename: str
+            - timestamp: tuple - (date, time)
+        - failed: list (str) - failed urls
+        - tmp_dir: tempfile.TemporaryDirectory instance
     """
 
     tmp_dir = load_temp_dir()

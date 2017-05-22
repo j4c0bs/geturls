@@ -86,8 +86,8 @@ def main():
             print(url)
         return 0
 
-    # if not args.silent:
-    #     print()
+    if not args.silent:
+        print()
 
     if args.dirprefix != os.getcwd():
         os.chdir(args.dirprefix)
@@ -111,11 +111,9 @@ def main():
 
     if not args.silent:
         if log_details:
-            url_found = len(urlist)
-            url_retrieved = len(log_details)
-            url_failed = len(failed)
+            stats = (len(s) for s in (urlist, log_details, failed))
             w = os.get_terminal_size()[0]
-            print(' URLs: {} - Completed: {} - Failed: {} '.format(url_found, url_retrieved, url_failed).center(w, '-'))
+            print(' URLs: {} - Completed: {} - Failed: {} '.format(*stats).center(w, '-'))
 
         if failed and not args.quiet:
             print('Failed URLs:')

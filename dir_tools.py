@@ -15,12 +15,24 @@ def validate_directory(user_dir):
 
 
 def load_temp_dir():
+    """Makes temporary directory with unique prefix.
+
+    Returns:
+        - tmp_dir: tempfile.TemporaryDirectory instance
+    """
+
     temp_subname = 'GETURLS_TMP_{}'.format(int(time.time()))
     tmp_dir = tempfile.TemporaryDirectory(prefix=temp_subname)
     return tmp_dir
 
 
 def group_by_dir(urlist):
+    """Sorts urls into groups based on shared url directory paths.
+
+    Returns:
+        - dir_groups: dict
+    """
+
     dir_groups = {}
     for url in urlist:
         net_subdir, filename = url_unquote(url).rsplit('/',1)
