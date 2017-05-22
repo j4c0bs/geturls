@@ -58,6 +58,16 @@ def parse_arguments():
 
 # ------------------------------------------------------------------------------
 def save_to_subdirs(completed, dirsort_type, overwrite):
+    """Calls user selected subdir sort func to move files to their final directory.
+
+    Args:
+        - completed: list - tuples containing url/temp_path from download.to_tmp
+        - dirsort_type: str - ''/'host'/'type'
+        - overwrite: bool - passed on to write_files func
+
+    Returns:
+        - log_details: list - tuples of timestamp, url, path for log file
+    """
 
     if dirsort_type == 'type':
         log_details = write_files.to_filetype_subdirs(completed, overwrite)

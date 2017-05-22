@@ -44,16 +44,12 @@ class Progressbar(object):
 
     --> Standard display:
 
-    ----------------------------------------------------------------------------
     (1/5) https://test-url-dot-com/folder_01/file_01.txt       5.90MB : 1.50sec
-    [#########################################################]        3.82MBps
-    ----------------------------------------------------------------------------
-    (2/5) ...://test-url-dot-com/folder_002/file_02.txt        6.90MB : 1.77sec
-    [#########################################################]        3.60MBps
-    ----------------------------------------------------------------------------
-    (3/5) ...//test-url-dot-com/folder_0003/file_03.txt       [  5.41MB/7.90MB]
+
+    (2/5) ...s://test-url-dot-com/folder_002/file_02.txt       6.90MB : 1.77sec
+
+    (3/5) ...://test-url-dot-com/folder_0003/file_03.txt      [  5.41MB/7.90MB]
     [#############################################------------]        3.25MBps
-    ----------------------------------------------------------------------------
 
     --> Quiet display:
 
@@ -107,9 +103,6 @@ class Progressbar(object):
         self._bytes_tracker = deque([], 256)
         self._seconds_tracker = deque([], 256)
         self._reset_relative_params()
-        if not quiet:
-            print('{:>{n}}'.format(time.ctime(), n=self._line_length - 1))
-            self.line_separator()
 
 
     def line_separator(self):
@@ -128,7 +121,7 @@ class Progressbar(object):
         text = '\r{:<{w}}'.format(header_notice, w=self._line_length)
         print(text, end='')
         if not self._quiet:
-            self.line_separator()
+            print(' ' * self._line_length)
 
 
     def _set_update_func(self, quiet):
@@ -146,12 +139,12 @@ class Progressbar(object):
 
 
     def reset(self, total_bytes=0, url=''):
-        # """Prepares for downloading new url.
-        #
-        # Args:
-        #     total_bytes: int - size of incoming file in bytes
-        #     url: str - to be displayed in terminal
-        # """
+        """Prepares for downloading new url.
+
+        Args:
+            total_bytes: int - size of incoming file in bytes
+            url: str - to be displayed in terminal
+        """
 
         self.url = url
         self.current_fileno += 1
@@ -184,7 +177,8 @@ class Progressbar(object):
         """
 
         if len(self.url) >= line_space:
-            trunc_url = self.url[(len(self.url) - line_space) + 5:]
+            # trunc_url = self.url[(len(self.url) - line_space) + 5:]
+            trunc_url = self.url[(len(self.url) - line_space) + 4:]
             text_url = '...' + trunc_url
         else:
             text_url = self.url
@@ -193,7 +187,13 @@ class Progressbar(object):
 
     def _running_total(self, complete=False):
         """Constructs url and cumulative total for display.
+
         Example: https://test-url-dot-com/dir/file  [123.45KB/67.89MB]
+
+        Args:
+            - complete: bool - triggers change in display text of current bytes
+                to total bytes : total time
+
         Returns:
             - url_bytes_total: str
         """
@@ -213,9 +213,7 @@ class Progressbar(object):
 
 
     def _set_bar_length(self):
-        """Calculates total length for progress bar based on max size of rate text.
-        Rate text is 17 char total - 13 char max + 4 space char pad
-        """
+        """Calculates total len for progress bar based on max size of rate text."""
 
         self._line_length = os.get_terminal_size()[0]
         self.bar_length = self._line_length - 19
@@ -223,8 +221,10 @@ class Progressbar(object):
 
     def _draw_bar(self, ix=0):
         """Creates str progress bar.
+
         Example: [#########--------]
-        Arg:
+
+        Args:
             ix: int - updated progress index for next # character
         """
 
@@ -234,6 +234,7 @@ class Progressbar(object):
 
     def _draw_display(self, ix, complete=False):
         """Creates text for 2 line progress display.
+
         Args:
             - ix: int
             - complete: bool - Triggers printing single line without backspace.
@@ -254,9 +255,8 @@ class Progressbar(object):
         if not complete or self._complete_switch:
             print('\b' * back, end='')
         else:
-            # erases last line with progressbar and enables new url to print over
-            # print('\b' * (self._line_length - 1), end='')
-            print('-'*self._line_length)
+            print('\b' * (self._line_length - 1), end='')
+            print(' '*self._line_length)
 
 
     def _calculate_download_rate(self, bytes_delta):
@@ -277,8 +277,9 @@ class Progressbar(object):
 
     def _text_update(self, chunk_value):
         """Quiet display - url and cumulative total only.
+        Text is not persistent and is erased with each successive call.
 
-        Arg:
+        Args:
             chunk_value: int - incoming bytes
         """
 
@@ -314,6 +315,16 @@ class Progressbar(object):
 
 # ------------------------------------------------------------------------------
 def simulate_download(nfiles=1, KBps=5000, quiet=False):
+    """Test function to display progressbar.
+    File03 simulates a URL without byte headers.
+    Filesizes increment in 1MB chunks starting at 4.9MB.
+
+    Args:
+        - nfiles: int - number of URLs/files to download
+        - KBps: int - simulated download rate
+        - quiet: bool - enables quiet display mode
+    """
+
     fake_url = lambda i: 'https://test-url-dot-com/folder_{}/file_{}.txt'.format(str(i).zfill(i+1), str(i).zfill(2))
     filesize = lambda i: (i + 4.9) * 10**6
     progressbar = Progressbar(quiet=quiet, nfiles=nfiles)
