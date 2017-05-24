@@ -2,7 +2,7 @@ import csv
 import os
 
 from dir_tools import confirm_directory
-from pathname import get_type, get_path
+from pathname import get_path, get_type, match_names_to_subdirs, split_name
 # ------------------------------------------------------------------------------
 def to_cwd(completed, overwrite):
     log_details = []
@@ -64,7 +64,36 @@ def to_host_subdirs(completed, overwrite):
 
 
 # ------------------------------------------------------------------------------
+def to_name_subdirs(completed, overwrite):
+    all_paths, urls, all_netdirs, all_names, all_timestamps = list(zip(*completed))
+    name_to_subdir = match_names_to_subdirs(all_names)
+
+    for subdir in set(name_to_subdir.values()):
+        if subdir != os.curdir:
+            confirm_directory(subdir)
+
+    log_details = []
+    namecache = set()
+    for temp_path, url, filename, dl_timestamp in zip(all_paths, urls, all_names, all_timestamps):
+        discrete_name = filename not in namecache
+
+        subdir = name_to_subdir.get(split_name(filename)[0], os.curdir)
+
+        filepath, filename = get_path(filename, root=subdir, overwrite=(overwrite and discrete_name))
+        os.rename(temp_path, filepath)
+        namecache.add(filename)
+
+        date, clock = dl_timestamp
+        log_details.append((date, clock, url, os.path.abspath(filepath)))
+
+    return log_details
+
+
+# ------------------------------------------------------------------------------
 def to_logfile(logfilename, log_details):
     with open(logfilename, 'a', newline='') as logfile:
         logwriter = csv.writer(logfile)
         logwriter.writerows(log_details)
+
+
+# ------------------------------------------------------------------------------

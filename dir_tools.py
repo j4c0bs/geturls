@@ -4,15 +4,32 @@ import time
 from urllib.parse import unquote as url_unquote
 # ------------------------------------------------------------------------------
 def confirm_directory(subdir):
-    if not os.path.exists(subdir):
+    if os.path.exists(subdir):
+        if not os.path.isdir(subdir):
+            return False
+    else:
         os.mkdir(subdir)
+    return True
+
+
+# def confirm_directory(subdir):
+#     if not os.path.exists(subdir):
+#         os.mkdir(subdir)
 
 
 def validate_directory(user_dir):
     user_dir = os.path.abspath(user_dir)
-    confirm_directory(user_dir)
-    return user_dir
+    status = confirm_directory(user_dir)
+    if status:
+        return user_dir
+    else:
+        return os.curdir
 
+# def validate_directory(user_dir):
+#     user_dir = os.path.abspath(user_dir)
+#     confirm_directory(user_dir)
+#     return user_dir
+#
 
 def load_temp_dir():
     """Makes temporary directory with unique prefix.

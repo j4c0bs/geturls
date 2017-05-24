@@ -177,7 +177,6 @@ class Progressbar(object):
         """
 
         if len(self.url) >= line_space:
-            # trunc_url = self.url[(len(self.url) - line_space) + 5:]
             trunc_url = self.url[(len(self.url) - line_space) + 4:]
             text_url = '...' + trunc_url
         else:
@@ -250,13 +249,22 @@ class Progressbar(object):
         text = '\r{:<{s}}{:<{s}}'.format(url_bytes_total, bar_total, s=self._line_length)
         back = self._line_length * 2
 
+        # if complete:
+        #     text = '\r{:<{s}}'.format(url_bytes_total, s=self._line_length)
+        #     print(text, end='')
+        # else:
+        #     print(text, end='')
+
         print(text, end='')
 
         if not complete or self._complete_switch:
             print('\b' * back, end='')
         else:
             print('\b' * (self._line_length - 1), end='')
-            print(' '*self._line_length)
+            print(' ' * self._line_length)
+
+            # >>> this line will erase and replace like quiet
+            # print('\b' * (self._line_length), end='')
 
 
     def _calculate_download_rate(self, bytes_delta):

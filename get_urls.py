@@ -69,10 +69,12 @@ def save_to_subdirs(completed, dirsort_type, overwrite):
         - log_details: list - tuples of timestamp, url, path for log file
     """
 
-    if dirsort_type == 'type':
-        log_details = write_files.to_filetype_subdirs(completed, overwrite)
-    elif dirsort_type == 'host':
+    if dirsort_type == 'host':
         log_details = write_files.to_host_subdirs(completed, overwrite)
+    elif dirsort_type == 'name':
+        log_details = write_files.to_name_subdirs(completed, overwrite)
+    elif dirsort_type == 'type':
+        log_details = write_files.to_filetype_subdirs(completed, overwrite)
     else:
         log_details = write_files.to_cwd(completed, overwrite)
 
