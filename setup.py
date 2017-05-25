@@ -50,10 +50,11 @@ setup(
         'Topic :: Internet',
         'Topic :: Utilities'
     ],
+
     keywords='URL requests',
     # packages=find_packages(exclude=['docs', 'tests*']),
     packages=['geturls'],
-    install_requires=['python>=3.4.3'],
+    install_requires=['python>3.4'],
     extras_require={},
     package_data={},
     data_files=[],
