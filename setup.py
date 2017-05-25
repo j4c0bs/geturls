@@ -52,9 +52,10 @@ setup(
     ],
 
     keywords='URL requests',
-    # packages=find_packages(exclude=['docs', 'tests*']),
-    packages=['geturls'],
-    install_requires=['python>3.4'],
+    packages=find_packages(exclude=['docs', '_tests']),
+    # packages=['geturls'],
+    # install_requires=['python>3.4'],
+    install_requires=[],
     extras_require={},
     package_data={},
     data_files=[],
@@ -64,7 +65,7 @@ setup(
     # pip to create the appropriate form of executable for the target platform.
     entry_points={
         'console_scripts': [
-            'geturls=geturls.cmd_script:main',
+            'geturls=geturls.geturls:main',
         ],
     },
 )
