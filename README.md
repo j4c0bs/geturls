@@ -24,7 +24,7 @@
     [--overwrite]
 ### Skip specified filetypes
     [--reject], [-r] pdf .txt
-### Write / append details to download log file
+### Write [append] details to download log file
 CSV text format is date, time, url, filepath
 
     [--log], [-l] downloadfolder/logfile.csv
