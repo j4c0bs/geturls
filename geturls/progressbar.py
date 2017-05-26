@@ -6,6 +6,20 @@ import os
 import time
 from time import time as timestamp
 # ------------------------------------------------------------------------------
+def screen_width():
+    return os.get_terminal_size()[0]
+
+
+def center_notice(text, char=''):
+    text = '{:-^{w}}'.format(text.center(len(text)+2, ' '), w=screen_width())
+    if not char:
+        return text[:len(text)//2].replace('-','>') + text[len(text)//2:].replace('-','<')
+    elif char == '-':
+        return text
+    else:
+        return text.replace('-', char)
+
+
 def time_unit(sec):
     if sec >= 3600:
         val = sec / 3600
@@ -15,7 +29,7 @@ def time_unit(sec):
         unit = 'min'
     else:
         val = sec
-        unit = 'sec'
+        unit = 's'
     return '{:.2f}{}'.format(val, unit)
 
 
@@ -70,8 +84,6 @@ class Progressbar(object):
             - timestamp in seconds at start of current url request
 
     Methods:
-        - line_separator
-            Prints line of hyphens the full width of the terminal screen
         - no_byte_headers
             Text display for urls without content-length or accept-ranges headers
         - reset
@@ -97,33 +109,13 @@ class Progressbar(object):
         self.nfiles = nfiles
         self._tot_fileno = str(nfiles)
         self._set_update_func(quiet)
-        self._line_length = os.get_terminal_size()[0]
+        self._line_length = screen_width()
         self._set_bar_length()
         self.url = ''
         self.start_time = 0
         self._bytes_tracker = deque([], 256)
         self._seconds_tracker = deque([], 256)
         self._reset_relative_params()
-
-
-    def line_separator(self):
-        print('-'*self._line_length)
-
-
-    def no_byte_headers(self, url):
-        """Display text for URL without valid Accept-Ranges or Content-Length."""
-
-        self.reset(url=url)
-        self._complete_switch = True
-        fileno_status = '({}/{}) '.format(self.current_fileno, self._tot_fileno)
-        notice = '{}Missing byte headers - progress NA: '.format(fileno_status)
-        line_space = self._line_length - len(notice)
-        text_url = self._truncate_url(line_space)
-        header_notice = '{}{}'.format(notice, text_url)
-        text = '\r{:<{w}}'.format(header_notice, w=self._line_length)
-        print(text, end='')
-        if not self._quiet:
-            print(' ' * self._line_length)
 
 
     def _set_update_func(self, quiet):
@@ -149,12 +141,9 @@ class Progressbar(object):
             url: str - to be displayed in terminal
         """
 
-        if not self._complete_switch and self.current_fileno:
-            # print(self._text_cache, end='')
-            print(self._text_cache[1:])
-            print('Download Incomplete'.center(self._line_length, '*'))
-            print('=' * self._line_length)
-            # print('-' * self._line_length)
+        if not self._quiet:
+            if not self._complete_switch and self.current_fileno:
+                self.incomplete_notice()
 
         self.url = url
         self.current_fileno += 1
@@ -170,11 +159,39 @@ class Progressbar(object):
     def cleanup(self):
         if self._quiet:
             print('\b' * self._line_length, end='')
+        else:
+            self.reset()
+
+
+    def incomplete_notice(self):
+        print(' DOWNLOAD INCOMPLETE '.center(self._line_length, '-'))
+        print(self._text_cache[1:self._line_length])
+        print('-' * self._line_length)
+        print()
 
 
     def timeout(self):
         print('\b' * self._line_length, end='')
         print('CONNECTION TIMEOUT'.center(self._line_length, '-'))
+
+
+    def no_byte_headers(self, url):
+        """Display text for URL without valid Accept-Ranges or Content-Length."""
+
+        self.reset(url=url)
+        self._complete_switch = True
+
+        fileno_status = '{}/{} '.format(self.current_fileno, self._tot_fileno)
+        notice = '{}Missing byte headers - progress NA: '.format(fileno_status)
+
+        line_space = self._line_length - len(notice)
+        text_url = self._truncate_url(line_space)
+
+        header_notice = '{}{}'.format(notice, text_url)
+        text = '\r{:<{w}}'.format(header_notice, w=self._line_length)
+        print(text, end='')
+        if not self._quiet:
+            print(' ' * self._line_length)
 
 
     def _truncate_url(self, line_space):
@@ -188,8 +205,7 @@ class Progressbar(object):
         """
 
         if len(self.url) >= line_space:
-            trunc_url = self.url[(len(self.url) - line_space) + 4:]
-            text_url = '...' + trunc_url
+            text_url = '...' + self.url[(len(self.url) - line_space) + 4:]
         else:
             text_url = self.url
         return text_url
@@ -208,7 +224,7 @@ class Progressbar(object):
             - url_bytes_total: str
         """
 
-        fileno_status = '({}/{}) '.format(self.current_fileno, self._tot_fileno)
+        fileno_status = '{}/{} '.format(self.current_fileno, self._tot_fileno)
 
         if not complete:
             cur_bytes = '[{}/{}] '.format(byte_unit(self._current_total, pad=True), self._display_total)
@@ -217,7 +233,7 @@ class Progressbar(object):
             cur_bytes = '{} : {} '.format(self._display_total, time_unit(tot_sec))
 
         line_space = self._line_length - len(cur_bytes) - len(fileno_status)
-        text_url = self._truncate_url(self._line_length - 29)
+        text_url = self._truncate_url(line_space - 5)
         url_bytes_total = '{}{:<{line_space}}{}'.format(fileno_status, text_url, cur_bytes, line_space=line_space)
         return url_bytes_total
 
@@ -225,7 +241,7 @@ class Progressbar(object):
     def _set_bar_length(self):
         """Calculates total len for progress bar based on max size of rate text."""
 
-        self._line_length = os.get_terminal_size()[0]
+        self._line_length = screen_width()
         self.bar_length = self._line_length - 19
 
 
@@ -332,7 +348,7 @@ class Progressbar(object):
 
 
 # ------------------------------------------------------------------------------
-def simulate_download(nfiles=1, KBps=5000, quiet=False, incomplete=False, overflow=False):
+def simulate_download(nfiles=1, KBps=15000, quiet=False, missing=3, incomplete=4):
     """Test function to display progressbar.
     File03 simulates a URL without byte headers.
     Filesizes increment in 1MB chunks starting at 4.9MB.
@@ -343,13 +359,7 @@ def simulate_download(nfiles=1, KBps=5000, quiet=False, incomplete=False, overfl
         - quiet: bool - enables quiet display mode
     """
 
-    if incomplete:
-        extra_bytes_ratio = 0.8
-    elif overflow:
-        extra_bytes_ratio = 1.2
-    else:
-        extra_bytes_ratio = 1
-
+    failed = 0
 
     fake_url = lambda i: 'https://test-url-dot-com/folder_{}/file_{}.txt'.format(str(i).zfill(i+1), str(i).zfill(2))
     filesize = lambda i: (i + 4.9) * 10**6
@@ -361,10 +371,17 @@ def simulate_download(nfiles=1, KBps=5000, quiet=False, incomplete=False, overfl
 
     for i in range(1, nfiles+1):
 
-        if i == 4:
-            progressbar.no_byte_headers(url=fake_url(i))
-            time.sleep(2)
-            continue
+        total_bytes_ratio = 1
+
+        if missing:
+            if i % missing == 0:
+                progressbar.no_byte_headers(url=fake_url(i))
+                time.sleep(2)
+                continue
+        if incomplete:
+            if i % incomplete == 0:
+                failed += 1
+                total_bytes_ratio = 0.8
 
         total_bytes = filesize(i)
         progressbar.reset(total_bytes=total_bytes, url=fake_url(i))
@@ -375,7 +392,7 @@ def simulate_download(nfiles=1, KBps=5000, quiet=False, incomplete=False, overfl
         add_sec = time_deltas.append
 
         read_bytes = 0
-        while read_bytes < total_bytes * extra_bytes_ratio:
+        while read_bytes < total_bytes * total_bytes_ratio:
             progressbar.update(chunk)
             read_bytes += chunk
 
@@ -387,13 +404,11 @@ def simulate_download(nfiles=1, KBps=5000, quiet=False, incomplete=False, overfl
             last_time = now
             loop_count += 1
 
-    if quiet:
-        progressbar.cleanup()
-    else:
-        progressbar.reset()
+    progressbar.cleanup()
 
-    w = os.get_terminal_size()[0]
-    print(' URLs: {} - Completed: {} - Failed: {} '.format(nfiles, nfiles, 0).center(w, '-'))
+    n_comp = nfiles - failed
+    w = screen_width()
+    print(' URLs: {} - Completed: {} - Failed: {} '.format(nfiles, n_comp, failed).center(w, '-'))
     print()
 
 
@@ -403,10 +418,16 @@ def parse_arguments():
                                      description='>>> Test display of progressbar')
 
     parser.add_argument('--nfiles', '-n', type=int, default=5,
-                         help='Number of simulated files to download - defaults to 5')
+                         help='Number of simulated files to download - default: 5')
 
-    parser.add_argument('--rate', '-r', type=int, default=5000,
-                         help='Simulated download rate (KBps) - defaults to 5000')
+    parser.add_argument('--rate', '-r', type=int, default=15000,
+                         help='Simulated download rate (KBps) - defaults to 15000')
+
+    parser.add_argument('--missing', '-m', type=int, default=3,
+                         help='Simulate missing byte headers for file number multiples of m - default: 3')
+
+    parser.add_argument('--incomplete', '-i', type=int, default=4,
+                         help='Simulate incomplete file download for file number multiples of i - default: 4')
 
     parser.add_argument('--quiet', '-q', action='store_true',
                          help='Minimal status display to stdout')
@@ -415,11 +436,11 @@ def parse_arguments():
 
 
 def main():
-    # import argparse
     args = parse_arguments()
-
-    print('Progressbar simulated file download:\n')
-    simulate_download(nfiles=args.nfiles, KBps=args.rate, quiet=args.quiet)
+    print()
+    print(center_notice('Progressbar simulated file download', char='*'))
+    print()
+    simulate_download(nfiles=args.nfiles, KBps=args.rate, quiet=args.quiet, missing=args.missing, incomplete=args.incomplete)
 
 
 # ------------------------------------------------------------------------------
