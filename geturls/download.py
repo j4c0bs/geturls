@@ -3,8 +3,8 @@ import time
 from urllib import request
 from urllib.error import URLError
 
-from dir_tools import load_temp_dir, group_by_dir, confirm_directory
-from progressbar import Progressbar
+from geturls.dir_tools import load_temp_dir, group_by_dir, confirm_directory
+from geturls.progressbar import Progressbar
 # ------------------------------------------------------------------------------
 def get_response(url):
     response = False

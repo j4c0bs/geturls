@@ -1,8 +1,8 @@
 import csv
 import os
 
-from dir_tools import confirm_directory
-from pathname import get_path, get_type, match_names_to_subdirs, split_name
+from geturls.dir_tools import confirm_directory
+from geturls.pathname import get_path, get_type, match_names_to_subdirs, split_name
 # ------------------------------------------------------------------------------
 def to_cwd(completed, overwrite):
     log_details = []

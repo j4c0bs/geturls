@@ -66,6 +66,7 @@ setup(
     entry_points={
         'console_scripts': [
             'geturls=geturls.geturls:main',
+            'geturls_simulate=geturls.progressbar:main'
         ],
     },
 )

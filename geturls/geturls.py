@@ -4,10 +4,10 @@ import argparse
 from itertools import compress
 import os
 
-from dir_tools import validate_directory
-import download
-from parser import extract_urls, extract_urls_from_files
-import write_files
+from geturls.dir_tools import validate_directory
+import geturls.download as download
+from geturls.parser import extract_urls, extract_urls_from_files
+import geturls.write_files as write_files
 # ------------------------------------------------------------------------------
 def parse_arguments():
     parser = argparse.ArgumentParser(prog='get_urls',

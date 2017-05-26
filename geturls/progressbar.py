@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import argparse
 from collections import deque
 import os
 import time
@@ -413,10 +414,14 @@ def parse_arguments():
     return parser.parse_args()
 
 
-# ------------------------------------------------------------------------------
-if __name__ == '__main__':
-    import argparse
+def main():
+    # import argparse
     args = parse_arguments()
 
     print('Progressbar simulated file download:\n')
     simulate_download(nfiles=args.nfiles, KBps=args.rate, quiet=args.quiet)
+
+
+# ------------------------------------------------------------------------------
+if __name__ == '__main__':
+    main()
