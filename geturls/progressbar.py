@@ -399,8 +399,8 @@ def simulate_download(nfiles=1, KBps=5000, quiet=False, incomplete=False, overfl
 
 # ------------------------------------------------------------------------------
 def parse_arguments():
-    parser = argparse.ArgumentParser(prog='progressbar - test',
-                                     description='test display of progressbar')
+    parser = argparse.ArgumentParser(prog='geturls_simulate',
+                                     description='>>> Test display of progressbar')
 
     parser.add_argument('--nfiles', '-n', type=int, default=5,
                          help='Number of simulated files to download - defaults to 5')

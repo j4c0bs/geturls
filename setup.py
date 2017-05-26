@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Script for installing pyfttt.
+Script for installing geturls.
 
 To install, run:
 
@@ -23,7 +23,8 @@ if sys.argv[-1] == 'setup.py':
     print("To install geturls, run 'python setup.py install'\n")
 
 if sys.version_info[:3] < (3, 4, 3):
-    print("geturls requires Python 3.4.3 or later (%d.%d.%d detected)." % sys.version_info[:3])
+    # print("geturls requires Python 3.4.3 or later (%d.%d.%d detected)." % sys.version_info[:3])
+    print('geturls requires Python 3.4.3 or later ({}.{}.{} detected)'.format(*sys.version_info[:3]))
     sys.exit(-1)
 
 
@@ -37,7 +38,7 @@ setup(
     long_description=open('README.rst').read(),
     url='https://github.com/JeremyJacobs/geturls',
     author='Jeremy Jacobs',
-    author_email='jeremy@j4c0bs.net',
+    author_email='pub@j4c0bs.net',
     license='BSD',
     classifiers=[
         'Environment :: Console',
@@ -57,7 +58,7 @@ setup(
     # install_requires=['python>3.4'],
     install_requires=[],
     extras_require={},
-    package_data={},
+    package_data={'':['LICENSE.txt', 'MANIFEST.in', 'docs/*']},
     data_files=[],
 
     # To provide executable scripts, use entry points in preference to the
