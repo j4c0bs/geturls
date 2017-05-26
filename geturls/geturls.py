@@ -10,8 +10,8 @@ from geturls.parser import extract_urls, extract_urls_from_files
 import geturls.write_files as write_files
 # ------------------------------------------------------------------------------
 def parse_arguments():
-    parser = argparse.ArgumentParser(prog='get_urls',
-                                     description='downloads and sorts urls parsed from file(s)')
+    parser = argparse.ArgumentParser(prog='geturls',
+                                     description='Parses, downloads, and sorts urls from file(s)')
 
     input_group = parser.add_mutually_exclusive_group(required=True)
     subdir_group = parser.add_mutually_exclusive_group()
@@ -23,7 +23,7 @@ def parse_arguments():
                               help="Input text URL(s) to download")
 
     parser.add_argument('--dirprefix', '-d', type=validate_directory, default=os.getcwd(),
-                         help='Root / parent directory to store all files and subdirectories - defaults to cwd')
+                         help='Root / parent directory to store all files and subdirectories. Defaults to cwd')
 
     subdir_group.add_argument('--hostsort', action='store_true',
                                help='Create subdirectories based on host site')
