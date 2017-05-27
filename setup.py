@@ -23,7 +23,6 @@ if sys.argv[-1] == 'setup.py':
     print("To install geturls, run 'python setup.py install'\n")
 
 if sys.version_info[:3] < (3, 4, 3):
-    # print("geturls requires Python 3.4.3 or later (%d.%d.%d detected)." % sys.version_info[:3])
     print('geturls requires Python 3.4.3 or later ({}.{}.{} detected)'.format(*sys.version_info[:3]))
     sys.exit(-1)
 
@@ -54,8 +53,6 @@ setup(
 
     keywords='URL requests',
     packages=find_packages(exclude=['docs', '_tests']),
-    # packages=['geturls'],
-    # install_requires=['python>3.4'],
     install_requires=[],
     extras_require={},
     package_data={'':['LICENSE.txt', 'MANIFEST.in', 'docs/*']},
