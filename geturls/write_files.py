@@ -2,7 +2,7 @@ import csv
 import os
 
 from geturls.dir_tools import confirm_directory
-from geturls.pathname import get_path, get_type, match_names_to_subdirs, split_name
+from geturls.pathname import get_name, get_path, get_type, match_names_to_subdirs
 # ------------------------------------------------------------------------------
 def to_cwd(completed, overwrite):
     log_details = []
@@ -76,9 +76,7 @@ def to_name_subdirs(completed, overwrite):
     namecache = set()
     for temp_path, url, filename, dl_timestamp in zip(all_paths, urls, all_names, all_timestamps):
         discrete_name = filename not in namecache
-
-        subdir = name_to_subdir.get(split_name(filename)[0], os.curdir)
-
+        subdir = name_to_subdir.get(get_name(filename), os.curdir)
         filepath, filename = get_path(filename, root=subdir, overwrite=(overwrite and discrete_name))
         os.rename(temp_path, filepath)
         namecache.add(filename)

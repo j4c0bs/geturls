@@ -126,6 +126,7 @@ def main():
             stats = (len(s) for s in (urlist, log_details, failed))
             w = os.get_terminal_size()[0]
             print(' URLs: {} - Completed: {} - Failed: {} '.format(*stats).center(w, '-'))
+            print()
 
         if failed and not args.quiet:
             print('Failed URLs:')

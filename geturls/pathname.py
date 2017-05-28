@@ -8,6 +8,7 @@ import re
 import string
 # ------------------------------------------------------------------------------
 CHAR_ESC = str.maketrans({p: '\{}'.format(p) for p in string.punctuation})
+has_digit_suffix = re.compile(r"^.+?(\-\d+)$")
 
 
 def load_alphamap(split_digits=False):
@@ -28,62 +29,91 @@ ALPHANUM_MAP = load_alphamap()
 ALPHA_MAP = load_alphamap(split_digits=True)
 
 # ------------------------------------------------------------------------------
-def strip_path(url):
-    return url.rsplit('/',1)[1]
-
-
-def get_type(filename, subdir=True):
+def split_name_type(filename, subdir=False):
     if '.' not in filename or (filename.startswith('.') and filename.count('.') == 1):
         filetype = ''
+        name = filename
     else:
-        filetype = filename.rsplit('.', 1)[1]
+        name, filetype = filename.rsplit('.', 1)
         if any((p in filetype for p in string.punctuation)):
             ft = list(takewhile(lambda s: s.isalnum(), filetype))
             filetype = ''.join(ft)
 
     if subdir and not filetype:
         filetype = 'unknown_filetype'
+
+    return name, filetype
+
+
+def get_name(filename):
+    name, _ = split_name_type(filename)
+    return name
+
+
+def get_type(filename, subdir=True):
+    _, filetype = split_name_type(filename, subdir=subdir)
     return filetype
 
 
-def split_name(filename, subdir=False):
-    filetype = get_type(filename, subdir=subdir)
-    if filetype:
-        filename = filename.rsplit('.', 1)[0]
-
-    return filename, filetype
-
-
 def check_name(filename, root=os.curdir):
-    fn, fn_type = split_name(filename)
+    """Scans filenames in dir and appends a numerical suffix to prevent overwrite.
+    To prevent name collisions, -n is appended to filename.
+
+    Args:
+        - filename: str - with or without filetype
+        - root: str - valid directory
+
+    Returns:
+        - filepath: str - path using validated filename
+        - valid_filename: str
+    """
+
+    fn, fn_type = split_name_type(filename)
     target_dir = os.listdir(root)
     check_files = [other_fn for other_fn in target_dir if fn in other_fn]
 
-    if filename not in target_dir or not check_files:
-        fn_out = filename
+    if not check_files and filename not in target_dir:
+        valid_filename = filename
     else:
-        fn_incremented = re.compile(r"^%s\-(\d+)\.%s$" % (fn.translate(CHAR_ESC), fn_type))
+        if has_digit_suffix.match(fn):
+            fn = fn.rsplit('-', 1)[0]
+
+        if fn_type:
+            fn_incremented = re.compile(r"^%s\-(\d+)\.%s$" % (fn.translate(CHAR_ESC), fn_type))
+        else:
+            fn_incremented = re.compile(r"^%s\-(\d+)$" % (fn.translate(CHAR_ESC)))
+
         end_digits = []
 
         for other_fn in check_files:
             fn_match = fn_incremented.match(other_fn)
             if fn_match:
-                end_digits.append(int(fn_match.groups()[0]))
+                end_digits.append(fn_match.groups()[0])
             elif filename == other_fn:
-                end_digits.append(0)
+                end_digits.append('0')
 
         if end_digits:
-            fn_suffix = str(max(end_digits) + 1)
             if fn_type:
                 fn_end = '.' + fn_type
             else:
                 fn_end = ''
-            fn_out = ''.join([fn, '-', fn_suffix, fn_end])
-        else:
-            fn_out = filename
 
-    filepath = os.path.join(root, fn_out)
-    return filepath, fn_out
+            end_digits.sort(key=lambda n: int(n))
+            max_digit = end_digits[-1]
+            if max_digit.startswith('0') and len(max_digit) > 1:
+                zero_pad = len(max_digit)
+            else:
+                zero_pad = 0
+
+            n = int(max_digit) + 1
+            n_suffix = str(n).zfill(zero_pad)
+            valid_filename = ''.join([fn, '-', n_suffix, fn_end])
+
+        else:
+            valid_filename = filename
+
+    filepath = os.path.join(root, valid_filename)
+    return filepath, valid_filename
 
 
 def get_path(filename, root=os.curdir, overwrite=False):
@@ -98,7 +128,7 @@ def get_path(filename, root=os.curdir, overwrite=False):
 # ------------------------------------------------------------------------------
 def char_ix(fn_enc, char='a'):
     """Generator for locating index of specified character within input str.
-    
+
     Args:
         - fn_enc: str - encoded into a/d/p format
         - char: str - character to locate within fn_enc
@@ -199,7 +229,8 @@ def match_names_to_subdirs(filenames):
     matched = set()
     name_to_subdir = {}
     name_sets = {}
-    fn_names = set((split_name(fn)[0] for fn in filenames))
+    # fn_names = set((split_name(fn)[0] for fn in filenames))
+    fn_names = set((get_name(fn) for fn in filenames))
     cwd_files = set((f for f in os.listdir() if os.path.isfile(f)))
     cwd_subdirs = [d for d in os.listdir() if os.path.isdir(d)]
 
@@ -266,34 +297,4 @@ def match_names_to_subdirs(filenames):
     return name_to_subdir
 
 
-
 # ------------------------------------------------------------------------------
-# TESTS
-# ------------------------------------------------------------------------------
-# def get_fake_filelist(d='.'):
-#     return [fn for fn in os.listdir(d) if ('.' in fn and not fn.startswith('.'))]
-
-# ------------------------------------------------------------------------------
-if __name__ == '__main__':
-    print()
-    test_subdir = '/Users/jpls/Desktop/DLS'
-    os.chdir(test_subdir)
-    # all_files = get_fake_filelist(d=test_subdir)
-
-    # test_names = ['808DIGIT9', 'numpy-ref-1.12.0', '_a-b.c=d.e_',
-    #               'networkx_reference', 'XFCS_Overview', '_test',
-    #               'PTA001_m', 'Bleep_01_m01']
-
-    # test_names.sort(key=lambda s: len(s))
-
-    test_names = ['TXT_0.txt', 'URL_TXT_01.txt']
-
-    n = match_names_to_subdirs(test_names)
-    print(n)
-
-    # for name in test_names:
-    #     print('-'*80)
-    #     # print(name)
-    #     tokens = split_to_tokens(name)
-    #     for t in tokens:
-    #         print(t)
