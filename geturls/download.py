@@ -70,8 +70,6 @@ def verbose_download(url, filepath, progressbar):
             with open(filepath, 'wb') as f:
                 f.write(response.read())
 
-            progressbar.line_separator()
-
         return True
 
     else:

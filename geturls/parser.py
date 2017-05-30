@@ -1,37 +1,37 @@
 import re
 from string import punctuation
+from urllib.parse import urlparse
 # ------------------------------------------------------------------------------
 
-is_url = re.compile(r"(((http)s?://)?(w{3}\.)?([\w\-\.]+)(:\d)?\.([a-z]+)/((\.?(.+[^\/])+(/|\.)?)+)[^\/])$", re.IGNORECASE)
-scheme_pattern = re.compile(r"^((http)s?:)?(//).+")
-punc = punctuation.replace('/','')
+
+is_url = re.compile(r"((((http)s?|ftp)://)?(w{3}\.)?([\w\-\.]+)(:\d)?\.([a-z]+)/((\.?(.+[^\/])+(/|\.)?)+)[^\/])$", re.IGNORECASE)
 
 
-def _has_scheme(url):
-    if scheme_pattern.match(url):
-        return True
-    else:
-        return False
-
-
-def _check_scheme(url):
-    if not _has_scheme(url):
-        slash_url = '//' + url
-        if _has_scheme(slash_url):
-            url = slash_url
+def normalize_url(word, missing_scheme='http'):
+    url = urlparse(word)
+    if url.scheme:
+        if url.scheme in ('http', 'https', 'ftp'):
+            norm_scheme = url.scheme
         else:
-            return ''
+            if 'f' in url.scheme:
+                norm_scheme = 'ftp'
+            else:
+                norm_scheme = missing_scheme
+        host = url.netloc.lower().lstrip(punctuation)
+        if host.count('.') >= 2:
+            subdomain, domain = host.split('.', 1)
+            if set(subdomain) == set('w'):
+                host = domain
 
-    return url
+        norm_path = '/'.join((txt for txt in url.path.split('/') if txt))
+        norm_url = '{}://{}/{}'.format(norm_scheme, host, norm_path)
+        return norm_url
 
-
-def validate_urls(urls):
-    valid = []
-    for url in urls:
-        valid_url = is_url.match(url)
-        if valid_url:
-            valid.append(_check_scheme(valid_url.group()))
-    return valid
+    else:
+        if word.find('/') < word.find('.'):
+            word = word[word.find('/')+1:].lstrip(punctuation)
+        repair = '{}://{}'.format(missing_scheme, word)
+        return normalize_url(repair)
 
 
 def extract_urls(lines):
@@ -49,9 +49,9 @@ def extract_urls(lines):
         split_words = (word for word in line.split(' ') if not word.isalnum())
         for word in split_words:
             word = word.lstrip(punctuation)
-            valid_url = is_url.match(word)
+            valid_url = is_url.search(word)
             if valid_url:
-                links.append(_check_scheme(valid_url.group()))
+                links.append(normalize_url(valid_url.group()))
 
     return [link for link in links if link]
 
@@ -82,3 +82,11 @@ def extract_urls_from_files(files):
 
 
 # ------------------------------------------------------------------------------
+if __name__ == '__main__':
+    import sys
+    files = sys.argv[1:]
+    print()
+    links = extract_urls_from_files(files)
+    for link in sorted(links, key=lambda u: u.split('://')[1]):
+        print(link)
+    print()

@@ -1,7 +1,7 @@
 import csv
 import os
 
-from geturls.dir_tools import confirm_directory
+from geturls.dir_tools import confirm_directory, validate_netdir_trees
 from geturls.pathname import get_name, get_path, get_type, match_names_to_subdirs
 # ------------------------------------------------------------------------------
 def to_cwd(completed, overwrite):
@@ -45,9 +45,11 @@ def to_filetype_subdirs(completed, overwrite):
 # ------------------------------------------------------------------------------
 def to_host_subdirs(completed, overwrite):
     all_paths, urls, all_netdirs, all_names, all_timestamps = list(zip(*completed))
-    all_netdirs = [path.split('//')[1] if '//' in path else path for path in all_netdirs]
-    for subdirtree in set(all_netdirs):
-        os.makedirs(subdirtree, exist_ok=True)
+
+    # >>> setup func to transform netpath to dir friendly
+    # >>> >>> combine w validate and return final dir path
+
+    all_netdirs = validate_netdir_trees(all_netdirs)
 
     log_details = []
     namecache = set()
