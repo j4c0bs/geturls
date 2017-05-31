@@ -56,5 +56,5 @@ License
 -------
 
 geturls is released under the BSD 2-clause license. See
-'LICENSE <https://raw.githubusercontent.com/j4c0bs/geturls/master/LICENSE.txt>'_
+`LICENSE <https://raw.githubusercontent.com/j4c0bs/geturls/master/LICENSE.txt>`_
 for details.
