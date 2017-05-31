@@ -45,10 +45,6 @@ def to_filetype_subdirs(completed, overwrite):
 # ------------------------------------------------------------------------------
 def to_host_subdirs(completed, overwrite):
     all_paths, urls, all_netdirs, all_names, all_timestamps = list(zip(*completed))
-
-    # >>> setup func to transform netpath to dir friendly
-    # >>> >>> combine w validate and return final dir path
-
     all_netdirs = validate_netdir_trees(all_netdirs)
 
     log_details = []
