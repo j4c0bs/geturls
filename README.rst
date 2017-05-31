@@ -16,7 +16,7 @@ Command Line Usage
 ------------------
 
 See
-_USAGE: https://raw.githubusercontent.com/j4c0bs/geturls/master/docs/USAGE.md
+`USAGE <https://raw.githubusercontent.com/j4c0bs/geturls/master/docs/USAGE.md>`_
 for expanded details.
 
 To see a list of available arguments, run ''geturls --help''
