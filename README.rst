@@ -1,180 +1,60 @@
-# USAGE
+geturls
+=======
+
+Pure Python command line package for parsing, downloading, and sorting URLs.
+Features include automatic repair of URL syntax and multiple file sorting
+options to keep your directories organized.
+
+Installation
+------------
+
+::
+
+    python setup.py install
+
+Command Line Usage
+------------------
+
+See
+'USAGE <https://raw.githubusercontent.com/j4c0bs/geturls/master/docs/USAGE.md>'__
+for expanded details.
+
+To see a list of available arguments, run ''geturls --help''
+
+::
+
+    basic usage: geturls [--input] | [--urls]
+
+    optional arguments:
+      -h, --help            show this help message and exit
+
+      --input, -i           Input file(s) to parse for URLs
+      --urls, -u            Input text URL(s) to download
+
+      --dirprefix, -d       Root / parent directory to store all files and
+                            subdirectories. Defaults to cwd
+
+      --hostsort            Create subdirectories based on host site
+      --namesort            Create subdirectories based on filenames
+      --typesort            Create subdirectories based on filetypes
+
+      --extract, -x         Skip download and print URLs to stdout
+      --overwrite           Overwrite existing files of same name
+      --reject, -r          Skip filetypes entered
+      --wait, -w            Seconds to wait in between url requests. Defaults to
+                            0.01
+      --quiet, -q           Minimal status display to stdout
+      --silent, -s          Disable all printing to stdout
+      --log, -l             Write / append to download log file
+
+Requirements
+------------
+
+-  Python 3.4.3 or greater
+
+License
 -------
 
-URL Input
----------
-
-1. File(s) containing text to parse for valid URLs
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-::
-
-    [--input], [-i] filepath
-
-2. URLs as strings, space separated
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-[--urls], [-u] test.com/file1.txt test.com/file2.txt
-----------------------------------------------------
-
-Directory Output
-----------------
-
-Parent subdirectory for all downloads, defaults to cwd
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-::
-
-    [--dirprefix], [-d] downloadfolder/
-
-Autosort options:
------------------
-
-1. Mirror directory structure of netpath for each url
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-::
-
-    [--hostsort]
-
-2. Organize files [and create directories] based on file types
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-::
-
-    [--typesort]
-
-3. Organize files [and create directories] based on shared file names or matches to directory names in cwd
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-::
-
-    [--namesort]
-
-+-----+
-| ##  |
-| Wri |
-| te  |
-| Opt |
-| ion |
-| s   |
-| ### |
-| Ove |
-| rwr |
-| ite |
-| exi |
-| sti |
-| ng  |
-| fil |
-| es  |
-| of  |
-| sam |
-| e   |
-| nam |
-| e   |
-| [-- |
-| ove |
-| rwr |
-| ite |
-| ]   |
-| ### |
-| Ski |
-| p   |
-| spe |
-| cif |
-| ied |
-| fil |
-| ety |
-| pes |
-| [-- |
-| rej |
-| ect |
-| ],  |
-| [-r |
-| ]   |
-| pdf |
-| .tx |
-| t   |
-| ### |
-| Wri |
-| te  |
-| [ap |
-| pen |
-| d]  |
-| det |
-| ail |
-| s   |
-| to  |
-| dow |
-| nlo |
-| ad  |
-| log |
-| fil |
-| e   |
-| CSV |
-| tex |
-| t   |
-| for |
-| mat |
-| is  |
-| dat |
-| e,  |
-| tim |
-| e,  |
-| url |
-| ,   |
-| fil |
-| epa |
-| th  |
-+-----+
-| [-- |
-| log |
-| ],  |
-| [-l |
-| ]   |
-| dow |
-| nlo |
-| adf |
-| old |
-| er/ |
-| log |
-| fil |
-| e.c |
-| sv  |
-+-----+
-
-Display Options
----------------
-
-Minimal, impermanent status display
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-::
-
-    [--quiet], [-q]
-
-No status display or text printed to stdout
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-::
-
-    [--silent], [-s]
-
---------------
-
-Other Options
--------------
-
-Skip download and print parsed URLs to stdout
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-::
-
-    [--extract], [-x]
-
-Wait n seconds in between sequential requests
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-::
-
-    [--wait], [-w] n
+geturls is released under the BSD 2-clause license. See
+'LICENSE <https://raw.githubusercontent.com/j4c0bs/geturls/master/LICENSE.txt>'__
+for details.
