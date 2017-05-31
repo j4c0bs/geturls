@@ -16,7 +16,7 @@ Command Line Usage
 ------------------
 
 See
-'USAGE <https://raw.githubusercontent.com/j4c0bs/geturls/master/docs/USAGE.md>'__
+_USAGE: https://raw.githubusercontent.com/j4c0bs/geturls/master/docs/USAGE.md
 for expanded details.
 
 To see a list of available arguments, run ''geturls --help''
@@ -56,5 +56,5 @@ License
 -------
 
 geturls is released under the BSD 2-clause license. See
-'LICENSE <https://raw.githubusercontent.com/j4c0bs/geturls/master/LICENSE.txt>'__
+_LICENSE: https://raw.githubusercontent.com/j4c0bs/geturls/master/LICENSE.txt
 for details.
