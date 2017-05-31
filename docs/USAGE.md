@@ -8,7 +8,7 @@ Automatic file sorting options will fall back to cwd or parent subdirectory if a
 The namesort option finds matching tokens within incoming file names that are at least 3 characters in length. Name matching is prioritized by currently existing directory names in cwd. If no match is located, groups of matching file names are written to a directory named after the longest shared token (if it exists). Without a token match, a directory is created based on the file's name.
 
 ---
-## URL Input
+## URL Input - choose one:
 #### 1. File(s) containing text to parse for valid URLs
     [--input], [-i] filepath
 #### 2. URLs as strings, space separated
@@ -18,7 +18,7 @@ The namesort option finds matching tokens within incoming file names that are at
 #### Parent subdirectory for all downloads, defaults to cwd
     [--dirprefix], [-d] downloadfolder/
 
-## Autosort options:
+## Autosort options - choose one:
 #### 1. Mirror directory structure of netpath for each url
     [--hostsort]
 #### 2. Organize files [and create directories] based on file types
